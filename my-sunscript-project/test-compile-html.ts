@@ -14,7 +14,7 @@ async function test() {
 
   try {
     console.log('Compiling hello-world.sun to HTML...');
-    const result = await compiler.compileFile('examples/hello-world.sun');
+    const result = await compiler.compileFile('examples/hello-world-html.sun');
     console.log('Success! Generated HTML file');
     console.log('Output files:', Object.keys(result.code));
     console.log('\nOpen dist/hello-world.index.html in your browser!');

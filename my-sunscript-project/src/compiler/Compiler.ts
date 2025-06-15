@@ -74,8 +74,18 @@ export class SunScriptCompiler extends EventEmitter {
     await fs.mkdir(outputDir, { recursive: true });
     
     for (const [name, code] of Object.entries(result.code)) {
-      const outputPath = path.join(outputDir, `${baseName}.${name}.${ext}`);
+      let outputPath: string;
+      
+      // Special handling for HTML - create a single HTML file
+      if (this.config.targetLanguage === 'html' && name === 'index') {
+        outputPath = path.join(outputDir, `${baseName}.html`);
+      } else {
+        // For other languages, include the function name
+        outputPath = path.join(outputDir, `${baseName}.${name}.${ext}`);
+      }
+      
       await fs.writeFile(outputPath, code, 'utf-8');
+      console.log(`Generated: ${outputPath}`);
     }
   }
 
@@ -83,7 +93,8 @@ export class SunScriptCompiler extends EventEmitter {
     const extensions: Record<string, string> = {
       javascript: 'js',
       typescript: 'ts',
-      python: 'py'
+      python: 'py',
+      html: 'html'  // ADD THIS LINE
     };
     
     return extensions[this.config.targetLanguage] || 'js';

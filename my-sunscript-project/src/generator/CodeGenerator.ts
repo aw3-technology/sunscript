@@ -1,6 +1,7 @@
 import { AIProvider } from '../ai/AIProvider';
 import { Program, CompilationResult, AIContext } from '../types';
 import { ValidatorFactory } from '../validator/ValidatorFactory';
+import { Validator, ValidationResult } from '../validator/Validator';
 
 export class CodeGenerator {
   constructor(
@@ -106,7 +107,7 @@ export class CodeGenerator {
   }
 
   // ADD THIS NEW METHOD for HTML generation
-  private async generateHTMLPage(ast: Program, context: AIContext, validator: any): Promise<{ code: string; warnings: any[] }> {
+  private async generateHTMLPage(ast: Program, context: AIContext, validator: Validator): Promise<{ code: string; warnings: any[] }> {
     const warnings: any[] = [];
     
     // Build a comprehensive prompt for HTML generation
