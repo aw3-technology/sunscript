@@ -1,0 +1,14 @@
+# Todo Application
+
+## Features
+- Add, edit, delete todos
+- Mark as complete
+- Filter by status
+- Search functionality
+- Due dates with reminders
+- Categories/tags
+
+## Implementation
+Just build a modern todo app with all the standard features
+Make it responsive and accessible
+Use local storage for persistence

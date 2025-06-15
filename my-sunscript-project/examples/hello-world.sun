@@ -1,0 +1,7 @@
+@context learning
+
+function greet {
+    ask the user for their name
+    display a personalized greeting with their name
+    add a friendly emoji to make it welcoming
+}

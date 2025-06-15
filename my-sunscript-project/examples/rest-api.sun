@@ -1,0 +1,19 @@
+@api BlogService {
+    resource: BlogPost
+    
+    standard CRUD operations
+    
+    additional endpoints:
+    - GET /posts/trending
+    - GET /posts/by-author/:authorId
+    - POST /posts/:id/like
+    - GET /posts/search?q=query
+    
+    include:
+    - Authentication required for write operations
+    - Rate limiting
+    - Pagination
+    - Sorting and filtering
+    - Soft deletes
+    - Audit trail
+}

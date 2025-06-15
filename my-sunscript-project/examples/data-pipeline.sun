@@ -1,0 +1,16 @@
+@pipeline ProcessSalesData {
+    1. Read CSV files from uploads folder
+    2. Validate data format and required fields
+    3. Clean data:
+       - Remove duplicates
+       - Fix date formats
+       - Normalize currency values
+    4. Transform:
+       - Calculate totals by region
+       - Identify top products
+       - Generate trend analysis
+    5. Output:
+       - Summary report as PDF
+       - Detailed data to database
+       - Email notifications to managers
+}
