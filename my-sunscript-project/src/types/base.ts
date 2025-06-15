@@ -10,4 +10,4 @@ export interface Position {
     end: Position;
   }
   
-  export type TargetLanguage = 'javascript' | 'typescript' | 'python';
+  export type TargetLanguage = 'javascript' | 'typescript' | 'python' | 'html';

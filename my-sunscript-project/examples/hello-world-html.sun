@@ -1,0 +1,8 @@
+@context web application
+@targets html
+
+function greet {
+    create a greeting form with modern design
+    ask the user for their name with a styled input field
+    display a "Hello World" greeting when they click the submit button
+}

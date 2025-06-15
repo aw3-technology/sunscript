@@ -3,7 +3,7 @@ export * from './ast';
 export * from './compiler';
 export * from './ai';
 
-export type TargetLanguage = 'javascript' | 'typescript' | 'python';
+export type TargetLanguage = 'javascript' | 'typescript' | 'python' | 'html';
 
 export interface Position {
   line: number;
