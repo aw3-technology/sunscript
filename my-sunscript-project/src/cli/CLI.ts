@@ -150,12 +150,12 @@ export class CLI {
       .option('--clear-cache', 'Clear incremental compilation cache')
       .option('-v, --verbose', 'Verbose output')
       .action(async (file, options) => {
-        await this.handleCommand(async () => {
-          // Basic validation for the file parameter
+        try {
+          // Simple validation without complex validator
           if (!file || !file.endsWith('.sun')) {
-            throw new SunScriptError(ErrorCode.INVALID_OPERATION, 'File must have .sun extension', {
-              suggestions: ['Provide a valid SunScript file path ending with .sun']
-            });
+            console.error(chalk.red('❌ Error: File must have .sun extension'));
+            console.error(chalk.gray('💡 Provide a valid SunScript file path ending with .sun'));
+            process.exit(1);
           }
 
           // Check if it's a genesis file
@@ -172,7 +172,13 @@ export class CLI {
               verbose: options.verbose
             });
           }
-        }, 'run');
+        } catch (error: any) {
+          console.error(chalk.red(`❌ Error: ${error.message}`));
+          if (options.verbose) {
+            console.error(error.stack);
+          }
+          process.exit(1);
+        }
       });
   }
 
