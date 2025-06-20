@@ -6,7 +6,6 @@ Welcome to the SunScript documentation! SunScript is an AI-native programming la
 
 ### Getting Started
 - [Quick Start Guide](getting-started/quick-start.md) - Get up and running in 5 minutes
-- [Installation](getting-started/installation.md) - Install SunScript on your system
 - [Your First App](getting-started/first-app.md) - Build your first SunScript application
 - [Core Concepts](getting-started/concepts.md) - Understanding SunScript fundamentals
 

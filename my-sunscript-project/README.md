@@ -26,6 +26,12 @@ cp .env.example .env
 npm run build
 ```
 
+5. Link the CLI globally (optional):
+```bash
+npm link
+# Now you can use 'sunscript' command globally
+```
+
 ## Quick Start
 
 1. Create a `.sun` file:

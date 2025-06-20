@@ -40,17 +40,27 @@ SunScript is actively developed and used in production environments. However, as
 
 ### How do I install SunScript?
 
+Since SunScript is not yet published to npm, you need to build from source:
+
 ```bash
-# Global installation (recommended)
-npm install -g sunscript-compiler
-
-# Local project installation
-npm install sunscript-compiler
-
-# Build from source
+# Clone the repository
 git clone https://github.com/sunscript/sunscript-compiler
 cd sunscript-compiler
-npm install && npm run build
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Link globally to use 'sunscript' command
+npm link
+```
+
+After linking, you can use the `sunscript` command globally:
+```bash
+sunscript run genesis.sun
+sunscript let there be light
 ```
 
 ### What AI providers are supported?
@@ -481,15 +491,20 @@ For commercial code generation products, contact: will.schulz@aw3.tech
 
 ### "Command not found: sunscript"
 
+This usually means SunScript hasn't been linked globally. Fix it:
+
 ```bash
-# Install globally
-npm install -g sunscript-compiler
+# From the sunscript-compiler directory
+npm link
 
-# Or use npx
-npx sunscript-compiler compile app.sun
+# Verify it worked
+which sunscript
 
-# Check PATH
-echo $PATH | grep npm
+# Alternative: use npx with local path
+npx ts-node bin/sunscript.ts run genesis.sun
+
+# Or use node directly after building
+node dist/bin/sunscript.js run genesis.sun
 ```
 
 ### "AI Provider not configured"

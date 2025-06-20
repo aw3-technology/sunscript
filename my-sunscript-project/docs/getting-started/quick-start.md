@@ -10,29 +10,36 @@ Get up and running with SunScript in just 5 minutes! This guide will walk you th
 
 ## Installation
 
-### Option 1: npm Global Install (Recommended)
+### Build from Source (Currently Required)
+
+Since SunScript is not yet published to npm, you'll need to build from source:
 
 ```bash
-npm install -g sunscript-compiler
-```
-
-### Option 2: Local Project Install
-
-```bash
-mkdir my-sunscript-app
-cd my-sunscript-app
-npm init -y
-npm install sunscript-compiler
-```
-
-### Option 3: Build from Source
-
-```bash
+# Clone the repository
 git clone https://github.com/sunscript/sunscript-compiler
 cd sunscript-compiler
+
+# Install dependencies
 npm install
+
+# Build the project
 npm run build
+
+# Link globally to use 'sunscript' command
 npm link
+```
+
+### Alternative: Use npx with local path
+
+If you don't want to link globally, you can use npx with the local path:
+
+```bash
+# From within the sunscript-compiler directory
+npx ts-node bin/sunscript.ts run genesis.sun
+
+# Or compile TypeScript first
+npm run build
+node dist/bin/sunscript.js run genesis.sun
 ```
 
 ## Setup AI Provider
