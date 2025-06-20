@@ -25,7 +25,7 @@ export class SunScriptCompiler extends EventEmitter {
     );
     
     // Update config with validated values
-    this.config = { ...config, ...validatedConfig };
+    this.config = { ...config, ...((validatedConfig as any)) };
     
     if (!this.config.aiProvider) {
       throw new CompilationError('AI Provider is required', {

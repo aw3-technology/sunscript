@@ -49,11 +49,11 @@ export class FilePermissionManager {
       const hasRequiredAccess = this.hasRequiredAccess(permissions, requiredAccess);
       
       if (!hasRequiredAccess.allowed) {
-        await this.logAccessDenied(filePath, requiredAccess, permissions, hasRequiredAccess.reason);
+        await this.logAccessDenied(filePath, requiredAccess, permissions, hasRequiredAccess.reason || "Unknown error");
         return {
           allowed: false,
           permissions,
-          reason: hasRequiredAccess.reason,
+          reason: hasRequiredAccess.reason || "Unknown error",
           suggestions: hasRequiredAccess.suggestions
         };
       }
@@ -250,7 +250,7 @@ export class FilePermissionManager {
     return { allowed: true };
   }
 
-  private async performSecurityChecks(filePath: string, stats: fs.Stats, permissions: PermissionCheck): Promise<{ allowed: boolean; reason?: string; suggestions?: string[] }> {
+  private async performSecurityChecks(filePath: string, stats: any, permissions: PermissionCheck): Promise<{ allowed: boolean; reason?: string; suggestions?: string[] }> {
     const issues: string[] = [];
     const suggestions: string[] = [];
 

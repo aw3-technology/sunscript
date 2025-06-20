@@ -18,7 +18,7 @@ export class AnthropicProvider extends AIProvider {
       'Anthropic provider configuration'
     );
     
-    const apiKey = validatedConfig.apiKey || process.env.ANTHROPIC_API_KEY;
+    const apiKey = (validatedConfig as any).apiKey || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new AIProviderError(ErrorCode.AI_AUTHENTICATION_FAILED, 'Anthropic API key is required', {
         suggestions: [
@@ -42,9 +42,9 @@ export class AnthropicProvider extends AIProvider {
       });
     }
     
-    this.config.model = validatedConfig.model || 'claude-3-sonnet-20240229';
-    this.maxRetries = validatedConfig.maxRetries || 3;
-    this.timeout = validatedConfig.timeout || 30000;
+    this.config.model = (validatedConfig as any).model || 'claude-3-sonnet-20240229';
+    this.maxRetries = (validatedConfig as any).maxRetries || 3;
+    this.timeout = (validatedConfig as any).timeout || 30000;
   }
 
   async generateCode(

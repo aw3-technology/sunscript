@@ -330,7 +330,7 @@ export class FileSecurityValidator {
     if (hexPattern.test(content)) return true;
 
     // Check for URL encoding
-    const urlEncodedPattern = /%[0-9a-fA-F]{2}{20,}/;
+    const urlEncodedPattern = /%[0-9a-fA-F]{2,}/;
     if (urlEncodedPattern.test(content)) return true;
 
     return false;

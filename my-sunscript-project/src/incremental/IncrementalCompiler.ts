@@ -307,16 +307,20 @@ export class IncrementalCompiler extends EventEmitter {
       code: {},
       metadata: {
         version: '1.0.0',
+        timestamp: new Date().toISOString(),
         compiledAt: new Date().toISOString(),
         sourceFiles: [],
         warnings: [],
-        targetLanguage: this.config.targetLanguage
+        targetLanguage: this.config.targetLanguage,
+        optimizations: []
       }
     };
     
     for (const result of results) {
       Object.assign(combined.code, result.code);
-      combined.metadata.sourceFiles.push(...result.metadata.sourceFiles);
+      if (result.metadata.sourceFiles) {
+        combined.metadata.sourceFiles!.push(...result.metadata.sourceFiles);
+      }
       combined.metadata.warnings.push(...result.metadata.warnings);
     }
     
@@ -342,7 +346,7 @@ export class IncrementalCompiler extends EventEmitter {
           console.log(chalk.green(`⚡ Incremental build completed in ${result.compilationTime}ms`));
         }
       } catch (error) {
-        console.error(chalk.red(`❌ Compilation failed: ${error.message}`));
+        console.error(chalk.red(`❌ Compilation failed: ${(error as Error).message}`));
       }
     });
     

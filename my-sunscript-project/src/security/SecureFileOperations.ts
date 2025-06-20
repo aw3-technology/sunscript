@@ -381,7 +381,7 @@ export class SecureFileOperations {
   /**
    * Get secure file stats
    */
-  async getStats(filePath: string): Promise<fs.Stats> {
+  async getStats(filePath: string): Promise<any> {
     try {
       const sanitizedPath = InputSanitizer.sanitizePath(filePath);
       await this.permissionManager.ensureFileReadable(sanitizedPath);

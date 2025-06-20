@@ -2,12 +2,13 @@ import { TargetLanguage } from './index';
 
 export interface AIContext {
   targetLanguage: TargetLanguage;
-  projectName: string;
+  projectName?: string;
   fileName?: string;
   filePath?: string;
   domain?: string;
   requirements?: string[];
   maxTokens?: number;
+  context?: string;
 }
 
 export interface AIResponse {

@@ -131,7 +131,7 @@ export class LocalLLMProvider extends AIProvider {
     }
 
     const data = await response.json();
-    return data.response || '';
+    return (data as any).response || '';
   }
 
   private async callOpenAICompatibleAPI(systemPrompt: string, userPrompt: string, options?: GenerationOptions): Promise<any> {
@@ -158,7 +158,7 @@ export class LocalLLMProvider extends AIProvider {
     }
 
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
+    return (data as any).choices?.[0]?.message?.content || '';
   }
 
   private async callLlamaCppAPI(systemPrompt: string, userPrompt: string, options?: GenerationOptions): Promise<any> {
@@ -182,7 +182,7 @@ export class LocalLLMProvider extends AIProvider {
     }
 
     const data = await response.json();
-    return data.content || '';
+    return (data as any).content || '';
   }
 
   private extractAndCleanCode(response: any): string {
