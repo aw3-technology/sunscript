@@ -48,6 +48,5 @@ node dist/hello.js
 
 See `docs/` for detailed documentation.
 
-## License
 
-MIT
+
