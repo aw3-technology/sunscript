@@ -175,9 +175,6 @@ npx tsc --noEmit
 
 Contributions are welcome! Please read our contributing guidelines and submit pull requests to our repository.
 
-## License
-
-MIT
 
 ## Acknowledgments
 
