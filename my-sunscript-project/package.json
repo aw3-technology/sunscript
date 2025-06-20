@@ -35,8 +35,7 @@
     "glob": "^10.3.10",
     "htmlparser2": "^10.0.0",
     "ora": "^7.0.1",
-    "winston": "^3.11.0",
-    "@typescript-eslint/typescript-estree": "^6.21.0"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/htmlparser2": "^3.10.7",
@@ -44,6 +43,7 @@
     "@types/node": "^20.19.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "@typescript-eslint/typescript-estree": "^8.34.1",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.0.0",
     "jest": "^29.7.0",

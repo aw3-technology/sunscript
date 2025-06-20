@@ -1,4 +1,4 @@
-import { Token, TokenType } from '../types';
+import { Token, TokenType, SourceLocation } from '../types';
 import { 
   GenesisProgram, 
   ImportDeclaration, 
@@ -13,6 +13,13 @@ import { Parser } from './Parser';
 import { ParserError } from './ParserError';
 
 export class GenesisParser extends Parser {
+  protected currentLocation(): SourceLocation {
+    const token = this.peek();
+    return {
+      start: token.position,
+      end: token.position
+    };
+  }
   constructor(tokens: Token[]) {
     super(tokens);
   }

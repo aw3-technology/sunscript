@@ -33,6 +33,7 @@ export interface Program extends ASTNode {
   metadata: {
     version: string;
     context?: string;
+    parseErrors?: any[];
   };
 }
 
@@ -41,6 +42,40 @@ export interface FunctionDeclaration extends ASTNode {
   name: string;
   body: Statement[];
   metadata: FunctionMetadata;
+}
+
+export interface ComponentDeclaration extends ASTNode {
+  type: 'ComponentDeclaration';
+  name: string;
+  body: Statement[];
+  metadata: ComponentMetadata;
+}
+
+export interface APIDeclaration extends ASTNode {
+  type: 'APIDeclaration';
+  name: string;
+  endpoints: EndpointDefinition[];
+  metadata: APIMetadata;
+}
+
+export interface ComponentMetadata {
+  description?: string;
+  props?: ParameterDefinition[];
+  aiQuestions?: string[];
+  directives?: AIDirective[];
+}
+
+export interface APIMetadata {
+  description?: string;
+  version?: string;
+  aiQuestions?: string[];
+  directives?: AIDirective[];
+}
+
+export interface EndpointDefinition {
+  method: string;
+  path: string;
+  description?: string;
 }
 
 export interface FunctionMetadata {

@@ -7,6 +7,7 @@ export interface AIContext {
   filePath?: string;
   domain?: string;
   requirements?: string[];
+  maxTokens?: number;
 }
 
 export interface AIResponse {

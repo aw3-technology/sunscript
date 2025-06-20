@@ -39,17 +39,25 @@ export class ErrorHandler {
     }
 
     // Add context if provided
-    if (context) {
-      sunScriptError.context = {
-        ...sunScriptError.context,
-        operation: context.operation,
-        stage: context.stage,
-        ...context.additionalInfo
-      };
-      
-      if (context.filePath && !sunScriptError.filePath) {
-        (sunScriptError as any).filePath = context.filePath;
-      }
+    if (context && !sunScriptError.context) {
+      // Create a new error with merged context since properties are readonly
+      sunScriptError = new SunScriptError(
+        sunScriptError.code,
+        sunScriptError.message,
+        {
+          context: {
+            ...sunScriptError.context,
+            operation: context.operation,
+            stage: context.stage,
+            ...context.additionalInfo
+          },
+          filePath: sunScriptError.filePath || context.filePath,
+          line: sunScriptError.line,
+          column: sunScriptError.column,
+          suggestions: sunScriptError.suggestions,
+          cause: sunScriptError.cause
+        }
+      );
     }
 
     // Log the error

@@ -9,6 +9,7 @@ export interface CompilerConfig {
   watch?: boolean;
   domain?: string;
   optimizations?: string[];
+  verbose?: boolean;
 }
 
 export interface CompilerContext {

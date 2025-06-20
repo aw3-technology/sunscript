@@ -63,6 +63,7 @@ export class SunScriptError extends Error {
   public readonly line?: number;
   public readonly column?: number;
   public readonly suggestions?: string[];
+  public readonly cause?: Error;
 
   constructor(
     code: ErrorCode,
@@ -135,42 +136,84 @@ export class SunScriptError extends Error {
 
 // Specific error classes for different error types
 export class ParseError extends SunScriptError {
-  constructor(message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(ErrorCode.SYNTAX_ERROR, message, options);
     this.name = 'ParseError';
   }
 }
 
 export class CompilationError extends SunScriptError {
-  constructor(message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(ErrorCode.COMPILATION_FAILED, message, options);
     this.name = 'CompilationError';
   }
 }
 
 export class AIProviderError extends SunScriptError {
-  constructor(code: ErrorCode, message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(code: ErrorCode, message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(code, message, options);
     this.name = 'AIProviderError';
   }
 }
 
 export class FileSystemError extends SunScriptError {
-  constructor(code: ErrorCode, message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(code: ErrorCode, message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(code, message, options);
     this.name = 'FileSystemError';
   }
 }
 
 export class GenesisError extends SunScriptError {
-  constructor(code: ErrorCode, message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(code: ErrorCode, message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(code, message, options);
     this.name = 'GenesisError';
   }
 }
 
 export class NetworkError extends SunScriptError {
-  constructor(code: ErrorCode, message: string, options: Parameters<typeof SunScriptError.prototype.constructor>[2] = {}) {
+  constructor(code: ErrorCode, message: string, options?: {
+    context?: Record<string, any>;
+    filePath?: string;
+    line?: number;
+    column?: number;
+    suggestions?: string[];
+    cause?: Error;
+  }) {
     super(code, message, options);
     this.name = 'NetworkError';
   }

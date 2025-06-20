@@ -3,7 +3,7 @@ export * from './ast';
 export * from './compiler';
 export * from './ai';
 
-export type TargetLanguage = 'javascript' | 'typescript' | 'python' | 'html';
+export type TargetLanguage = 'javascript' | 'typescript' | 'python' | 'html' | 'json' | 'text' | 'sunscript';
 
 export interface Position {
   line: number;
@@ -29,6 +29,8 @@ export interface CompilationMetadata {
   targetLanguage: TargetLanguage;
   optimizations: string[];
   warnings: CompilerWarning[];
+  compiledAt?: string;
+  sourceFiles?: string[];
 }
 
 export interface CompilerWarning {

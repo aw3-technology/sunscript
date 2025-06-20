@@ -174,7 +174,7 @@ export class Parser {
     } as any;
   }
 
-  private match(...types: TokenType[]): boolean {
+  protected match(...types: TokenType[]): boolean {
     for (const type of types) {
       if (this.check(type)) {
         this.advance();
@@ -184,29 +184,29 @@ export class Parser {
     return false;
   }
 
-  private check(type: TokenType): boolean {
+  protected check(type: TokenType): boolean {
     if (this.isAtEnd()) return false;
     return this.peek().type === type;
   }
 
-  private advance(): Token {
+  protected advance(): Token {
     if (!this.isAtEnd()) this.current++;
     return this.previous();
   }
 
-  private isAtEnd(): boolean {
+  protected isAtEnd(): boolean {
     return this.peek().type === TokenType.EOF;
   }
 
-  private peek(): Token {
+  protected peek(): Token {
     return this.tokens[this.current];
   }
 
-  private previous(): Token {
+  protected previous(): Token {
     return this.tokens[this.current - 1];
   }
 
-  private consume(type: TokenType, message: string): Token {
+  protected consume(type: TokenType, message: string): Token {
     if (this.check(type)) return this.advance();
     throw new ParserError(message, this.peek().position);
   }
