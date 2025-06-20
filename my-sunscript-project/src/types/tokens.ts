@@ -10,6 +10,20 @@ export enum TokenType {
   BEHAVIOR = 'BEHAVIOR',
   TEST = 'TEST',
   
+  // Genesis-specific keywords
+  PROJECT = 'PROJECT',
+  VERSION = 'VERSION',
+  AUTHOR = 'AUTHOR',
+  SOURCE = 'SOURCE',
+  OUTPUT = 'OUTPUT',
+  IMPORTS = 'IMPORTS',
+  CONFIG = 'CONFIG',
+  ENTRYPOINTS = 'ENTRYPOINTS',
+  BUILD = 'BUILD',
+  DEPENDENCIES = 'DEPENDENCIES',
+  DEPLOYMENT = 'DEPLOYMENT',
+  AS = 'AS',
+  
   // Control flow
   IF = 'IF',
   ELSE = 'ELSE',
@@ -28,6 +42,7 @@ export enum TokenType {
   DEDENT = 'DEDENT',
   NEWLINE = 'NEWLINE',
   COLON = 'COLON',
+  COMMA = 'COMMA',
   OPEN_BRACE = 'OPEN_BRACE',
   CLOSE_BRACE = 'CLOSE_BRACE',
   

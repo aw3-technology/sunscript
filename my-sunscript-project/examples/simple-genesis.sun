@@ -1,0 +1,39 @@
+@project "Hello World Project"
+@version "1.0.0"
+@author "SunScript Team"
+@source "./"
+@output "./generated"
+@context learning application
+
+# Project Description
+A simple hello world project to demonstrate the genesis.sun file format.
+
+# Project Structure
+imports {
+    hello-world.sun as HelloWorld
+    hello-world-html.sun as HelloHTML
+}
+
+# Global Configuration
+config {
+    language: "english"
+    theme: "friendly"
+}
+
+# Entry Points
+entrypoints {
+    console: HelloWorld.greet
+    web: HelloHTML.greet
+}
+
+# Build Configuration
+build {
+    targets: ["javascript", "html"]
+    minify: false
+    sourcemaps: true
+}
+
+# Project-wide AI Context
+@optimize for clarity and simplicity
+@ensure code is beginner-friendly
+@add helpful comments to explain concepts

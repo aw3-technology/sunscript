@@ -2,6 +2,7 @@ import { SourceLocation } from './index';
 
 export type ASTNodeType = 
   | 'Program'
+  | 'GenesisProgram'
   | 'FunctionDeclaration'
   | 'ComponentDeclaration'
   | 'APIDeclaration'
@@ -12,7 +13,13 @@ export type ASTNodeType =
   | 'ExpressionStatement'
   | 'NaturalLanguageExpression'
   | 'AIDirective'
-  | 'Block';
+  | 'Block'
+  | 'ImportDeclaration'
+  | 'ConfigBlock'
+  | 'EntrypointDeclaration'
+  | 'BuildConfig'
+  | 'DependencyDeclaration'
+  | 'DeploymentConfig';
 
 export interface ASTNode {
   type: ASTNodeType;
@@ -82,4 +89,64 @@ export interface TestDeclaration extends ASTNode {
   type: 'TestDeclaration';
   name: string;
   body: Statement[];
+}
+
+// Genesis-specific AST nodes
+export interface GenesisProgram extends ASTNode {
+  type: 'GenesisProgram';
+  projectName: string;
+  version: string;
+  author?: string;
+  sourceDir: string;
+  outputDir: string;
+  description?: string;
+  imports: ImportDeclaration[];
+  config?: ConfigBlock;
+  entrypoints?: EntrypointDeclaration[];
+  buildConfig?: BuildConfig;
+  dependencies?: DependencyDeclaration;
+  deployment?: DeploymentConfig;
+  globalDirectives?: AIDirective[];
+}
+
+export interface ImportDeclaration extends ASTNode {
+  type: 'ImportDeclaration';
+  path: string;
+  alias?: string;
+}
+
+export interface ConfigBlock extends ASTNode {
+  type: 'ConfigBlock';
+  settings: Record<string, any>;
+}
+
+export interface EntrypointDeclaration extends ASTNode {
+  type: 'EntrypointDeclaration';
+  name: string;
+  target: string;
+}
+
+export interface BuildConfig extends ASTNode {
+  type: 'BuildConfig';
+  targets: string[];
+  options: Record<string, any>;
+}
+
+export interface DependencyDeclaration extends ASTNode {
+  type: 'DependencyDeclaration';
+  external?: Record<string, string>;
+  aiModels?: Record<string, string>;
+}
+
+export interface DeploymentConfig extends ASTNode {
+  type: 'DeploymentConfig';
+  environments: Record<string, DeploymentEnvironment>;
+}
+
+export interface DeploymentEnvironment {
+  url: string;
+  branch?: string;
+  ssl?: boolean;
+  cdn?: boolean;
+  [key: string]: any;
 }

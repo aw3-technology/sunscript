@@ -1,7 +1,7 @@
 import { Token, TokenType, Position } from '../types';
 import { Token as TokenClass } from './Token';
 import { LexerError } from './LexerError';
-import { patterns } from './patterns';
+import { patterns, keywords } from './patterns';
 
 export class Lexer {
   private input: string;
@@ -64,14 +64,42 @@ export class Lexer {
       return;
     }
 
-    // Keywords
-    const keywords = ['function', 'component', 'api', 'model', 'pipeline', 'behavior', 'test'];
-    for (const keyword of keywords) {
-      if (this.matchKeyword(keyword)) {
-        const tokenType = TokenType[keyword.toUpperCase() as keyof typeof TokenType];
-        this.addToken(tokenType, keyword);
-        return;
+    // Check for identifiers and keywords
+    if (this.match(patterns.identifier)) {
+      const value = this.lastMatch;
+      const keywordType = keywords.get(value.toLowerCase());
+      
+      if (keywordType) {
+        this.addToken(TokenType[keywordType as keyof typeof TokenType], value);
+      } else {
+        this.addToken(TokenType.IDENTIFIER, value);
       }
+      return;
+    }
+    
+    // Numbers
+    if (this.match(patterns.number)) {
+      this.addToken(TokenType.NUMBER, this.lastMatch);
+      return;
+    }
+    
+    // Strings
+    if (this.match(patterns.string)) {
+      const stringValue = this.lastMatch.slice(1, -1); // Remove quotes
+      this.addToken(TokenType.STRING, stringValue);
+      return;
+    }
+    
+    // Colon
+    if (this.match(patterns.colon)) {
+      this.addToken(TokenType.COLON, ':');
+      return;
+    }
+    
+    // Comma
+    if (this.match(patterns.comma)) {
+      this.addToken(TokenType.COMMA, ',');
+      return;
     }
 
     // Braces

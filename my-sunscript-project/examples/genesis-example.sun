@@ -1,0 +1,75 @@
+@project "Coffee Shop Management System"
+@version "1.0.0"
+@author "Brew Station Dev Team"
+@source "./src"
+@output "./build"
+@context business application
+
+# Project Description
+This system manages all aspects of a coffee shop including inventory,
+orders, customer management, and reporting.
+
+# Project Structure
+imports {
+    models/customer.sun as Customer
+    models/inventory.sun as Inventory
+    models/order.sun as Order
+    api/menu-api.sun as MenuAPI
+    components/dashboard.sun as Dashboard
+    components/order-form.sun as OrderForm
+}
+
+# Global Configuration
+config {
+    database: "postgresql"
+    authentication: "jwt"
+    api_version: "v1"
+    timezone: "America/Los_Angeles"
+}
+
+# Entry Points
+entrypoints {
+    web: Dashboard.main
+    api: MenuAPI.serve
+    cli: "cli/admin.sun"
+}
+
+# Build Configuration
+build {
+    targets: ["typescript", "html"]
+    minify: true
+    sourcemaps: true
+}
+
+# Dependencies
+dependencies {
+    external: {
+        "stripe": "^12.0.0"  # Payment processing
+        "nodemailer": "^6.9.0"  # Email notifications
+    }
+    
+    ai_models: {
+        "recommendation_engine": "gpt-4"
+        "inventory_prediction": "gpt-4"
+    }
+}
+
+# Project-wide AI Context
+@optimize for performance and user experience
+@ensure all code follows REST best practices
+@prioritize security in all components
+
+# Deployment Configuration
+deployment {
+    staging: {
+        url: "https://staging.brewstation.app"
+        branch: "develop"
+    }
+    
+    production: {
+        url: "https://brewstation.app"
+        branch: "main"
+        ssl: true
+        cdn: true
+    }
+}

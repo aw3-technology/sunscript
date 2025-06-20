@@ -1,0 +1,69 @@
+@context business website
+@targets html
+
+function createHeader {
+    create a navigation bar with "Brew Station" logo on the left
+    add navigation links for Menu, About, Location, and Contact
+    make the header sticky and add a subtle shadow when scrolling
+    use a coffee brown color scheme
+    ensure mobile responsive with hamburger menu
+}
+
+function showHeroSection {
+    create a full-width hero section with a background image of coffee beans
+    display "Brew Station" in large, elegant typography
+    add tagline "Seattle's Finest Coffee Experience Since 2020"
+    include a call-to-action button "View Our Menu" that scrolls to menu section
+    add a subtle parallax effect on scroll
+}
+
+function displayMenu {
+    create a menu section with warm background color
+    organize items into categories: "Coffee", "Specialty Drinks", "Pastries", "Breakfast"
+    show each item with name, description, and price
+    use card layout for each menu item
+    add hover effects to make items interactive
+    ?? should we include dietary labels like vegan or gluten-free?
+}
+
+function showAboutSection {
+    create an about section with our story
+    include text: "Founded by coffee enthusiasts in the heart of Seattle, Brew Station brings you ethically sourced, locally roasted coffee in a cozy atmosphere"
+    add an image grid showing coffee brewing process
+    include our values: sustainability, community, quality
+    use warm, inviting colors and typography
+}
+
+function displayLocation {
+    create a location section with embedded Google Maps
+    show address: "1234 Pike Street, Seattle, WA 98101"
+    display hours: "Mon-Fri: 6am-8pm, Sat-Sun: 7am-9pm"
+    add parking information and public transit options
+    style the map with coffee-themed colors
+}
+
+function createContactForm {
+    design a contact section with a feedback form
+    include fields for name, email, and message
+    add a "Send Message" button with hover effects
+    show phone number: "(206) 555-BREW"
+    include social media icons for Instagram, Facebook, and Twitter
+    validate form inputs before submission
+}
+
+function addFooter {
+    create a footer with dark coffee brown background
+    include copyright "© 2024 Brew Station. All rights reserved."
+    add quick links to all sections
+    show newsletter signup with email input
+    ensure all links have proper hover states
+}
+
+function addInteractivity {
+    implement smooth scrolling between sections
+    add fade-in animations as sections come into view
+    create a "back to top" button that appears on scroll
+    ensure all forms have proper validation
+    add loading states for form submissions
+    ?? should we add a coffee bean falling animation?
+}
