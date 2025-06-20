@@ -93,16 +93,33 @@ export class FileSecurityValidator {
         await this.logSecurityIssue('Null byte injection attempt', { filePath });
       }
 
-      // Check file extension
-      const ext = path.extname(normalizedPath).toLowerCase();
-      if (this.config.blockedExtensions.includes(ext)) {
-        issues.push(`File extension '${ext}' is not allowed`);
-        suggestions.push(`Use allowed extensions: ${this.config.allowedExtensions.join(', ')}`);
+      // Check if file exists and get stats to determine if it's a directory
+      let stats;
+      let isDirectory = false;
+      try {
+        stats = await fs.lstat(normalizedPath);
+        isDirectory = stats.isDirectory();
+      } catch (error) {
+        // File doesn't exist - we need to infer if it's intended to be a directory
+        // If path ends with path separator or has no extension, assume directory
+        const hasTrailingSlash = normalizedPath.endsWith(path.sep) || normalizedPath.endsWith('/');
+        const basename = path.basename(normalizedPath);
+        const hasNoExtension = !path.extname(basename);
+        isDirectory = hasTrailingSlash || hasNoExtension;
       }
 
-      if (this.config.allowedExtensions.length > 0 && !this.config.allowedExtensions.includes(ext)) {
-        issues.push(`File extension '${ext}' is not in allowed list`);
-        suggestions.push(`Use allowed extensions: ${this.config.allowedExtensions.join(', ')}`);
+      // Check file extension only for files, not directories
+      if (!isDirectory) {
+        const ext = path.extname(normalizedPath).toLowerCase();
+        if (this.config.blockedExtensions.includes(ext)) {
+          issues.push(`File extension '${ext}' is not allowed`);
+          suggestions.push(`Use allowed extensions: ${this.config.allowedExtensions.join(', ')}`);
+        }
+
+        if (this.config.allowedExtensions.length > 0 && !this.config.allowedExtensions.includes(ext)) {
+          issues.push(`File extension '${ext}' is not in allowed list`);
+          suggestions.push(`Use allowed extensions: ${this.config.allowedExtensions.join(', ')}`);
+        }
       }
 
       // Check for hidden files
@@ -124,26 +141,20 @@ export class FileSecurityValidator {
         suggestions.push(`Use allowed directories: ${this.config.allowedDirectories.join(', ')}`);
       }
 
-      // Check if file exists and get stats
-      let stats;
-      try {
-        stats = await fs.lstat(normalizedPath);
-      } catch (error) {
-        // File doesn't exist - that's okay for write operations
-        return { valid: issues.length === 0, securityIssues: issues, suggestions };
-      }
+      // If file exists, perform additional checks
+      if (stats) {
+        // Check for symlinks
+        if (stats.isSymbolicLink() && !this.config.allowSymlinks) {
+          issues.push('Symbolic links are not allowed');
+          suggestions.push('Use direct file paths instead of symbolic links');
+          await this.logSecurityIssue('Symlink access attempt', { filePath, normalizedPath });
+        }
 
-      // Check for symlinks
-      if (stats.isSymbolicLink() && !this.config.allowSymlinks) {
-        issues.push('Symbolic links are not allowed');
-        suggestions.push('Use direct file paths instead of symbolic links');
-        await this.logSecurityIssue('Symlink access attempt', { filePath, normalizedPath });
-      }
-
-      // Check file size
-      if (stats.size > this.config.maxFileSize) {
-        issues.push(`File size exceeds limit (${this.formatBytes(stats.size)} > ${this.formatBytes(this.config.maxFileSize)})`);
-        suggestions.push(`Use files smaller than ${this.formatBytes(this.config.maxFileSize)}`);
+        // Check file size (only for files, not directories)
+        if (!isDirectory && stats.size > this.config.maxFileSize) {
+          issues.push(`File size exceeds limit (${this.formatBytes(stats.size)} > ${this.formatBytes(this.config.maxFileSize)})`);
+          suggestions.push(`Use files smaller than ${this.formatBytes(this.config.maxFileSize)}`);
+        }
       }
 
       return {

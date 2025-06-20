@@ -34,7 +34,9 @@ export class SecureTempFileManager {
       maxFileSize: 100 * 1024 * 1024, // 100MB for temp files
       allowSymlinks: false,
       allowHiddenFiles: true, // Temp files might be hidden
-      scanForMaliciousContent: false // Skip content scanning for temp files
+      scanForMaliciousContent: false, // Skip content scanning for temp files
+      // Allow temp directories - remove /var from blocked directories since system temp is often under /var
+      blockedDirectories: ['/etc', '/usr', '/sys', '/proc', 'C:\\Windows', 'C:\\System32']
     });
 
     // Start cleanup interval (every 30 minutes)
@@ -392,7 +394,7 @@ export class SecureTempFileManager {
   private generateSecureFileName(options: TempFileOptions): string {
     const prefix = options.prefix || 'sunscript-';
     const suffix = options.suffix || '';
-    const extension = options.extension || '.tmp';
+    const extension = options.extension !== undefined ? options.extension : '.tmp';
     
     // Generate cryptographically secure random ID
     const randomId = crypto.randomBytes(16).toString('hex');
