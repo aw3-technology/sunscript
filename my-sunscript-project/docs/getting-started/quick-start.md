@@ -79,6 +79,10 @@ function main {
 ### 2. Compile Your Program
 
 ```bash
+# Using the run command (works for any .sun file)
+sunscript run hello.sun
+
+# Or using the compile command with specific target
 sunscript compile hello.sun --target javascript
 ```
 

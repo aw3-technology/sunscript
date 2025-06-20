@@ -2,6 +2,13 @@
 
 ## Basic Commands
 
+### Run a SunScript file
+```bash
+sunscript run hello.sun
+sunscript run genesis.sun
+sunscript run my-app.sun --verbose
+```
+
 ### Compile a single file
 ```bash
 sunscript compile hello.sun
@@ -35,6 +42,12 @@ sunscript genesis -f ./path/to/genesis.sun
 
 ## Command Options
 
+### run
+- `--full`: Force full build (disable incremental compilation)
+- `--watch`: Enable watch mode with incremental compilation  
+- `--clear-cache`: Clear incremental compilation cache
+- `-v, --verbose`: Verbose output showing compilation details
+
 ### compile
 - `-o, --output <dir>`: Output directory (default: `./dist`)
 - `-t, --target <language>`: Target language - javascript, typescript, python, html (default: `javascript`)
@@ -56,6 +69,9 @@ sunscript genesis -f ./path/to/genesis.sun
 
 ### Single File Compilation
 ```bash
+# Run any SunScript file (auto-detects genesis)
+sunscript run mycode.sun
+
 # Compile to JavaScript (default)
 sunscript compile mycode.sun
 
@@ -68,23 +84,31 @@ sunscript compile mycode.sun -o ./build
 
 ### Project Compilation with Genesis
 ```bash
+# Simple run command (recommended)
+sunscript run genesis.sun
+
 # The fun way - compile entire project (incremental by default)
 sunscript let there be light
 
 # Force a full rebuild
 sunscript let there be light --full
+sunscript run genesis.sun --full
 
 # Enable watch mode for development
 sunscript let there be light --watch
+sunscript run genesis.sun --watch
 
 # Clear cache and rebuild
 sunscript let there be light --clear-cache
+sunscript run genesis.sun --clear-cache
 
 # Verbose output to see incremental details
 sunscript let there be light -v
+sunscript run genesis.sun --verbose
 
 # Specify a different genesis file
 sunscript let there be light -g ./config/genesis.sun
+sunscript run ./config/genesis.sun
 
 # The standard way (all options work the same)
 sunscript genesis

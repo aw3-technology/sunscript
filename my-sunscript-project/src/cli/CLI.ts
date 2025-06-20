@@ -139,6 +139,91 @@ export class CLI {
       .action(async (sunscriptFile, options) => {
         await this.startDebugSession(sunscriptFile, options);
       });
+
+    // Add run command for genesis files
+    this.program
+      .command('run <file>')
+      .alias('r')
+      .description('Compile and run a SunScript file (especially genesis.sun)')
+      .option('--full', 'Force full build (disable incremental compilation)')
+      .option('--watch', 'Enable watch mode with incremental compilation')
+      .option('--clear-cache', 'Clear incremental compilation cache')
+      .option('-v, --verbose', 'Verbose output')
+      .action(async (file, options) => {
+        await this.handleCommand(async () => {
+          // Validate CLI arguments
+          const validatedArgs = CLIValidator.createArgumentParser('run', {
+            allowUnknownArgs: false,
+            sanitizeStrings: true,
+            maxArgLength: 1000
+          })(options);
+
+          // Check if it's a genesis file
+          if (file.endsWith('genesis.sun') || file === 'genesis.sun') {
+            await this.compileGenesis(file, {
+              forceFullBuild: validatedArgs.full || options.full,
+              watchMode: validatedArgs.watch || options.watch,
+              clearCache: validatedArgs.clearCache || options.clearCache,
+              verbose: validatedArgs.verbose || options.verbose
+            });
+          } else {
+            // Regular SunScript file compilation
+            await this.compileSingleFile(file, {
+              verbose: validatedArgs.verbose || options.verbose
+            });
+          }
+        }, 'run');
+      });
+  }
+
+  private async compileSingleFile(
+    filePath: string,
+    options: {
+      verbose?: boolean;
+    } = {}
+  ): Promise<void> {
+    try {
+      // Check if file exists
+      await fs.access(filePath);
+    } catch {
+      console.error(chalk.red(`❌ SunScript file not found: ${filePath}`));
+      process.exit(1);
+    }
+
+    console.log(chalk.blue(`🚀 Compiling ${filePath}...`));
+
+    const { SunScriptCompiler } = await import('../compiler/Compiler');
+    const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+    
+    const compiler = new SunScriptCompiler({
+      outputDir: './dist',
+      targetLanguage: 'javascript',
+      aiProvider: new OpenAIProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        model: 'gpt-4-turbo-preview'
+      })
+    });
+
+    try {
+      const result = await compiler.compileFile(filePath);
+      console.log(chalk.green(`✅ Successfully compiled to ./dist`));
+      
+      if (result.metadata.warnings.length > 0) {
+        console.log(chalk.yellow('\nWarnings:'));
+        result.metadata.warnings.forEach(w => 
+          console.log(chalk.yellow(`  - ${w.message}${options.verbose ? ` (${w.severity})` : ''}`))
+        );
+      }
+      
+    } catch (error: any) {
+      console.error(chalk.red(`❌ Compilation failed: ${error.message}`));
+      
+      if (options.verbose) {
+        console.error(error.stack);
+      }
+      
+      process.exit(1);
+    }
   }
 
   private async compileGenesis(

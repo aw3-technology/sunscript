@@ -43,13 +43,16 @@ function greetUser {
 2. Compile it:
 
 ```bash
-# To JavaScript (default)
-npx ts-node test-compile.ts
+# Using the run command (recommended)
+sunscript run genesis.sun
 
-# To HTML (complete web page)
-npx ts-node test-compile-html.ts
+# Using the biblical creation command
+sunscript let there be light
 
-# Or specify the file
+# Single file compilation
+sunscript compile examples/hello-world.sun
+
+# Legacy compilation (if needed)
 npx ts-node test-compile.ts examples/hello-world.sun
 ```
 
