@@ -61,7 +61,7 @@ export class Lexer {
       return; // Skip comments
     }
 
-    // AI Questions
+    // AI Questions - special syntax for AI instructions
     if (this.match(patterns.aiQuestion)) {
       this.addToken(TokenType.AI_QUESTION, '??');
       // Consume the rest of the line as the question
@@ -76,52 +76,14 @@ export class Lexer {
       return;
     }
 
-    // Directives
+    // Directives - special syntax for metadata and configuration
     if (this.match(patterns.directive)) {
       const directive = this.lastMatch.substring(1); // Remove @
       this.addToken(TokenType.AI_DIRECTIVE, directive);
       return;
     }
 
-    // Check for identifiers and keywords
-    if (this.match(patterns.identifier)) {
-      const value = this.lastMatch;
-      const keywordType = keywords.get(value.toLowerCase());
-      
-      if (keywordType) {
-        this.addToken(TokenType[keywordType as keyof typeof TokenType], value);
-      } else {
-        this.addToken(TokenType.IDENTIFIER, value);
-      }
-      return;
-    }
-    
-    // Numbers
-    if (this.match(patterns.number)) {
-      this.addToken(TokenType.NUMBER, this.lastMatch);
-      return;
-    }
-    
-    // Strings
-    if (this.match(patterns.string)) {
-      const stringValue = this.lastMatch.slice(1, -1); // Remove quotes
-      this.addToken(TokenType.STRING, stringValue);
-      return;
-    }
-    
-    // Colon
-    if (this.match(patterns.colon)) {
-      this.addToken(TokenType.COLON, ':');
-      return;
-    }
-    
-    // Comma
-    if (this.match(patterns.comma)) {
-      this.addToken(TokenType.COMMA, ',');
-      return;
-    }
-
-    // Braces
+    // Structural delimiters - these provide the scaffolding for large applications
     if (this.match(patterns.openBrace)) {
       this.addToken(TokenType.OPEN_BRACE, '{');
       return;
@@ -132,6 +94,48 @@ export class Lexer {
       return;
     }
 
+    // SUNSCRIPT CORE PHILOSOPHY: Natural language first, structure second
+    // Only tokenize as keywords when they're clearly structural elements
+    if (this.isAtStartOfStatement()) {
+      const lookAhead = this.peekWord();
+      if (lookAhead && this.isStructuralKeyword(lookAhead.toLowerCase())) {
+        this.advance(lookAhead.length);
+        const keywordType = keywords.get(lookAhead.toLowerCase());
+        this.addToken(TokenType[keywordType as keyof typeof TokenType], lookAhead);
+        return;
+      }
+    }
+
+    // After structural keywords, expect identifiers for names (function names, etc.)
+    if (this.expectingIdentifier()) {
+      const word = this.peekWord();
+      if (word && patterns.identifier.test(word)) {
+        this.advance(word.length);
+        this.addToken(TokenType.IDENTIFIER, word);
+        return;
+      }
+    }
+
+    // EVERYTHING ELSE IS NATURAL LANGUAGE
+    // This is the heart of SunScript - treat content as natural language by default
+    const naturalTextStart = this.position;
+    while (!this.isAtEnd() && 
+           this.peek() !== '\n' && 
+           this.peek() !== '{' && 
+           this.peek() !== '}' &&
+           this.peek() !== '@' &&
+           !this.input.substring(this.position).startsWith('??')) {
+      this.advance();
+    }
+    
+    if (this.position > naturalTextStart) {
+      const text = this.input.substring(naturalTextStart, this.position).trim();
+      if (text) {
+        this.addToken(TokenType.TEXT, text);
+      }
+      return;
+    }
+
     // Handle unexpected characters with error recovery
     const char = this.peek();
     if (this.isUnexpectedCharacter(char)) {
@@ -139,23 +143,8 @@ export class Lexer {
       return;
     }
     
-    // Default to TEXT for everything else
-    const textStart = this.position;
-    while (!this.isAtEnd() && 
-           this.peek() !== '\n' && 
-           this.peek() !== '{' && 
-           this.peek() !== '}' &&
-           this.peek() !== '@') {
-      this.advance();
-    }
-    
-    if (this.position > textStart) {
-      const text = this.input.substring(textStart, this.position).trim();
-      if (text) {
-        this.addToken(TokenType.TEXT, text);
-      }
-    } else {
-      // No progress made, advance one character to prevent infinite loop
+    // Safety fallback - advance one character to prevent infinite loops
+    if (!this.isAtEnd()) {
       this.advance();
     }
   }
@@ -196,12 +185,16 @@ export class Lexer {
     return this.isAtEnd() ? '\0' : this.input[this.position];
   }
 
-  private advance(): string {
-    const char = this.input[this.position++];
-    if (char !== '\n') {
-      this.column++;
+  private advance(count: number = 1): string {
+    let result = '';
+    for (let i = 0; i < count && !this.isAtEnd(); i++) {
+      const char = this.input[this.position++];
+      if (char !== '\n') {
+        this.column++;
+      }
+      result += char;
     }
-    return char;
+    return result;
   }
 
   private isAtEnd(): boolean {
@@ -319,5 +312,84 @@ export class Lexer {
   
   public clearErrors(): void {
     this.errors = [];
+  }
+  
+  private isAtStartOfStatement(): boolean {
+    // Check if we're at the beginning of a line (after newline) or after an opening brace
+    if (this.tokens.length === 0) return true;
+    
+    const lastToken = this.tokens[this.tokens.length - 1];
+    return lastToken.type === TokenType.NEWLINE || lastToken.type === TokenType.OPEN_BRACE;
+  }
+  
+  private isStructuralKeyword(keyword: string): boolean {
+    // Only treat these as keywords when they start statements - everything else is natural language
+    const structuralKeywords = new Set([
+      'function', 'component', 'api', 'model', 'pipeline', 'behavior', 'test',
+      'project', 'version', 'author', 'source', 'output', 'imports', 'config', 
+      'entrypoints', 'build', 'dependencies', 'deployment'
+    ]);
+    
+    return structuralKeywords.has(keyword);
+  }
+  
+  private peekWord(): string | null {
+    // Look ahead to get the next word without consuming it
+    const remaining = this.input.substring(this.position);
+    const match = remaining.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+    return match ? match[0] : null;
+  }
+
+  private expectingIdentifier(): boolean {
+    // Check if we're expecting an identifier (like after 'function' keyword for the function name)
+    if (this.tokens.length === 0) return false;
+    
+    const lastToken = this.tokens[this.tokens.length - 1];
+    
+    // After structural keywords, expect identifier for names
+    if (lastToken.type === TokenType.FUNCTION || 
+        lastToken.type === TokenType.COMPONENT ||
+        lastToken.type === TokenType.API ||
+        lastToken.type === TokenType.MODEL ||
+        lastToken.type === TokenType.PIPELINE) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  private isInFunctionBodyContext(): boolean {
+    // Look at recent tokens to determine if we're in a function body
+    let braceDepth = 0;
+    let foundFunction = false;
+    
+    // Scan backwards through tokens to find if we're inside a function
+    for (let i = this.tokens.length - 1; i >= 0; i--) {
+      const token = this.tokens[i];
+      
+      if (token.type === TokenType.CLOSE_BRACE) {
+        braceDepth++;
+      } else if (token.type === TokenType.OPEN_BRACE) {
+        if (braceDepth === 0) {
+          // We're inside this brace level - check if it's a function
+          // Look for FUNCTION keyword before this brace
+          for (let j = i - 1; j >= 0; j--) {
+            const prevToken = this.tokens[j];
+            if (prevToken.type === TokenType.FUNCTION) {
+              foundFunction = true;
+              break;
+            }
+            if (prevToken.type === TokenType.CLOSE_BRACE || 
+                prevToken.type === TokenType.OPEN_BRACE) {
+              break; // Hit another brace structure
+            }
+          }
+          break;
+        }
+        braceDepth--;
+      }
+    }
+    
+    return foundFunction && braceDepth === 0;
   }
 }

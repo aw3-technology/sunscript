@@ -102,7 +102,7 @@ export class Parser {
     };
     
     try {
-      const nameToken = this.consumeWithRecovery(TokenType.TEXT, "Expected function name");
+      const nameToken = this.consumeWithRecovery(TokenType.IDENTIFIER, "Expected function name");
       if (nameToken) {
         name = nameToken.value;
       }

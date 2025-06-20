@@ -1,0 +1,13 @@
+@context simple
+
+function greetUser {
+    ask user for their name
+    display friendly greeting message
+    include current time
+    make it welcoming and personal
+}
+
+function main {
+    call greetUser function
+    show application startup message
+}
