@@ -4,8 +4,14 @@ This document provides comprehensive API reference for programmatic usage of the
 
 ## Installation
 
+Since SunScript is not yet published to npm, clone and build from source:
+
 ```bash
-npm install sunscript-compiler
+git clone https://github.com/aw3-technology/sunscript.git
+cd sunscript
+npm install
+npm run build
+npm link
 ```
 
 ## Basic Usage
@@ -13,7 +19,11 @@ npm install sunscript-compiler
 ### Importing the Compiler
 
 ```typescript
+// After linking the package globally
 import { SunScriptCompiler, CompilerConfig } from 'sunscript-compiler';
+
+// Or using relative imports in development
+import { SunScriptCompiler, CompilerConfig } from './path/to/sunscript/src';
 ```
 
 ### Creating a Compiler Instance

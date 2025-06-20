@@ -6,8 +6,8 @@ The official compiler for SunScript - an AI-native programming language that let
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/sunscript-compiler.git
-cd sunscript-compiler
+git clone https://github.com/aw3-technology/sunscript.git
+cd sunscript
 ```
 
 2. Install dependencies:

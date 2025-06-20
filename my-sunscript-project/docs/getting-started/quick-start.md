@@ -16,8 +16,8 @@ Since SunScript is not yet published to npm, you'll need to build from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sunscript/sunscript-compiler
-cd sunscript-compiler
+git clone https://github.com/aw3-technology/sunscript.git
+cd sunscript
 
 # Install dependencies
 npm install
@@ -34,7 +34,7 @@ npm link
 If you don't want to link globally, you can use npx with the local path:
 
 ```bash
-# From within the sunscript-compiler directory
+# From within the sunscript directory
 npx ts-node bin/sunscript.ts run genesis.sun
 
 # Or compile TypeScript first

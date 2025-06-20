@@ -44,8 +44,8 @@ Since SunScript is not yet published to npm, you need to build from source:
 
 ```bash
 # Clone the repository
-git clone https://github.com/sunscript/sunscript-compiler
-cd sunscript-compiler
+git clone https://github.com/aw3-technology/sunscript.git
+cd sunscript
 
 # Install dependencies
 npm install
@@ -494,7 +494,7 @@ For commercial code generation products, contact: will.schulz@aw3.tech
 This usually means SunScript hasn't been linked globally. Fix it:
 
 ```bash
-# From the sunscript-compiler directory
+# From the sunscript directory
 npm link
 
 # Verify it worked
@@ -540,8 +540,8 @@ export LOCAL_LLM_URL="http://localhost:11434"
 # Fix file permissions
 chmod +x ./node_modules/.bin/sunscript
 
-# Run with sudo (not recommended)
-sudo npm install -g sunscript-compiler
+# Run with sudo (not recommended for development)
+sudo npm link
 
 # Use user-local npm
 npm config set prefix '~/.npm-global'
