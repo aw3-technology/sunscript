@@ -42,6 +42,10 @@ sunscript genesis -f ./path/to/genesis.sun
 ### let there be light / genesis
 - `-g, --genesis <file>` (for "let" command): Path to genesis.sun file (default: `./genesis.sun`)
 - `-f, --file <file>` (for "genesis" command): Path to genesis.sun file (default: `./genesis.sun`)
+- `--full`: Force full build (disable incremental compilation)
+- `--watch`: Enable watch mode with incremental compilation
+- `--clear-cache`: Clear incremental compilation cache
+- `-v, --verbose`: Verbose output showing incremental compilation details
 
 ### import
 - `-s, --source <dir>`: Source directory for SunScript files (default: `./src`)
@@ -64,17 +68,27 @@ sunscript compile mycode.sun -o ./build
 
 ### Project Compilation with Genesis
 ```bash
-# The fun way - compile entire project
+# The fun way - compile entire project (incremental by default)
 sunscript let there be light
+
+# Force a full rebuild
+sunscript let there be light --full
+
+# Enable watch mode for development
+sunscript let there be light --watch
+
+# Clear cache and rebuild
+sunscript let there be light --clear-cache
+
+# Verbose output to see incremental details
+sunscript let there be light -v
 
 # Specify a different genesis file
 sunscript let there be light -g ./config/genesis.sun
 
-# The standard way
+# The standard way (all options work the same)
 sunscript genesis
-
-# With custom genesis file
-sunscript genesis -f ./my-project.genesis.sun
+sunscript genesis --watch --verbose
 ```
 
 ### GitHub Project Import
@@ -108,9 +122,64 @@ When you run `sunscript let there be light`, you'll see:
 Output written to: ./build
 ```
 
+## Incremental Compilation Experience
+
+SunScript now features intelligent incremental compilation for lightning-fast builds:
+
+### First Build
+```
+🌌 In the beginning was the void...
+⚡ And then the developer said: "Let there be light!"
+✨ And there was code.
+
+📖 Reading the sacred texts from ./genesis.sun...
+
+🎉 Creation complete!
+   Project: My Awesome Project
+   Files processed: 15
+   ⚡ Incremental compilation enabled
+
+🌍 And the developer saw that the code was good.
+   Output written to: ./build
+```
+
+### Subsequent Builds (No Changes)
+```
+⚡ Lightning fast! No changes detected.
+   Output written to: ./build
+```
+
+### Incremental Updates
+```
+🔄 Incremental build: 1 modified, 2 dependents updated
+   Compilation time: 850ms
+
+🌍 And the developer saw that the code was good.
+   Output written to: ./build
+```
+
+### Watch Mode
+```bash
+sunscript let there be light --watch
+```
+```
+👀 Watching for changes... Press Ctrl+C to stop.
+
+# When you save a file:
+📝 File changed: src/utils.sun
+⚡ Incremental build completed: 1 changes, 432ms
+
+# When you save without changes:
+📄 File saved, no changes detected
+```
+
 ## Tips
 
-1. Always ensure you have a valid `genesis.sun` file when using project compilation
-2. The "let there be light" command requires exact spacing: `let there be light`
-3. Set your `OPENAI_API_KEY` environment variable before running commands
-4. Use `.env` file in your project root for API keys
+1. **Incremental compilation is enabled by default** - enjoy lightning-fast builds!
+2. Use `--watch` mode during development for automatic rebuilds
+3. Use `--full` when you want a complete rebuild from scratch
+4. The "let there be light" command requires exact spacing: `let there be light`
+5. Set your `OPENAI_API_KEY` environment variable before running commands
+6. Use `.env` file in your project root for API keys
+7. Clear cache with `--clear-cache` if you experience unexpected behavior
+8. Use `-v` flag to see detailed incremental compilation information

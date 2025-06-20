@@ -1,0 +1,12 @@
+{
+  "name": "test-project",
+  "version": "1.0.0",
+  "description": "Test project for reverse compilation",
+  "main": "userManager.js",
+  "dependencies": {
+    "express": "^4.18.0"
+  },
+  "scripts": {
+    "start": "node userManager.js"
+  }
+}

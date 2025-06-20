@@ -1,8 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { AIProvider } from '../ai/AIProvider';
-import { CodeAnalyzer } from './CodeAnalyzer';
-import { SunScriptGenerator } from './SunScriptGenerator';
+import { EnhancedCodeAnalyzer } from './EnhancedCodeAnalyzer';
+import { EnhancedSunScriptGenerator } from './EnhancedSunScriptGenerator';
 import chalk from 'chalk';
 import { glob } from 'glob';
 
@@ -31,12 +31,12 @@ export interface ProjectStructure {
 }
 
 export class ReverseCompiler {
-  private analyzer: CodeAnalyzer;
-  private generator: SunScriptGenerator;
+  private analyzer: EnhancedCodeAnalyzer;
+  private generator: EnhancedSunScriptGenerator;
 
   constructor(private aiProvider: AIProvider) {
-    this.analyzer = new CodeAnalyzer(aiProvider);
-    this.generator = new SunScriptGenerator(aiProvider);
+    this.analyzer = new EnhancedCodeAnalyzer(aiProvider);
+    this.generator = new EnhancedSunScriptGenerator(aiProvider);
   }
 
   async reverseCompile(options: ReverseCompileOptions): Promise<ReverseCompileResult> {
@@ -65,7 +65,7 @@ export class ReverseCompiler {
       analyzedFiles.set(filePath, analysis);
       
       // Collect dependencies
-      analysis.dependencies.forEach((dep: string) => dependencies.add(dep));
+      analysis.dependencies.forEach((dep: any) => dependencies.add(dep.name));
     }
 
     // Generate SunScript files
@@ -90,8 +90,8 @@ export class ReverseCompiler {
       sunScriptFiles.set(sunPath, sunScriptCode);
       
       // Generate import statement
-      if (analysis.isPublic) {
-        imports.push(`${sunPath.replace('.sun', '')} as ${analysis.moduleName}`);
+      if (analysis.exports.length > 0) {
+        imports.push(`${sunPath.replace('.sun', '')} as ${analysis.fileName.replace(/\.[^.]+$/, '')}`);
       }
     }
 

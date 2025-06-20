@@ -2,13 +2,29 @@ import { Command } from 'commander';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import chalk from 'chalk';
+import { ErrorHandler, globalErrorHandler } from '../errors/ErrorHandler';
+import { SunScriptError, ErrorCode } from '../errors/SunScriptError';
+import { Logger, globalLogger } from '../errors/Logger';
+import { CLIErrorHandler, withCLIErrorHandling } from './CLIErrorHandling';
+import { CLIValidator } from '../validation';
 
 export class CLI {
   private program: Command;
+  private errorHandler: ErrorHandler;
+  private logger: Logger;
+  private cliErrorHandler: CLIErrorHandler;
 
   constructor() {
     this.program = new Command();
+    this.errorHandler = new ErrorHandler({
+      verbose: false,
+      logErrors: true,
+      exitOnError: false // CLI will handle exit manually
+    });
+    this.logger = globalLogger;
+    this.cliErrorHandler = new CLIErrorHandler(this.logger);
     this.setupCommands();
+    this.setupErrorHandling();
   }
 
   private setupCommands(): void {
@@ -23,14 +39,33 @@ export class CLI {
       .arguments('there be light')
       .description('Compile project using genesis.sun (Biblical creation style!)')
       .option('-g, --genesis <file>', 'Path to genesis.sun file', './genesis.sun')
+      .option('--full', 'Force full build (disable incremental compilation)')
+      .option('--watch', 'Enable watch mode with incremental compilation')
+      .option('--clear-cache', 'Clear incremental compilation cache')
+      .option('-v, --verbose', 'Verbose output')
       .action(async (there, be, light, options) => {
-        // Verify the command was typed correctly
-        if (there !== 'there' || be !== 'be' || light !== 'light') {
-          console.error(chalk.red('❌ Did you mean "sunscript let there be light"?'));
-          process.exit(1);
-        }
-        
-        await this.compileGenesis(options.genesis);
+        await this.handleCommand(async () => {
+          // Validate CLI arguments
+          const validatedArgs = CLIValidator.createArgumentParser('let', {
+            allowUnknownArgs: false,
+            sanitizeStrings: true,
+            maxArgLength: 1000
+          })(options);
+
+          // Verify the command was typed correctly
+          if (there !== 'there' || be !== 'be' || light !== 'light') {
+            throw new SunScriptError(ErrorCode.INVALID_CONFIG, 'Command must be "let there be light"', {
+              suggestions: ['Use: sunscript let there be light']
+            });
+          }
+          
+          await this.compileGenesis(validatedArgs.genesis || options.genesis, {
+            forceFullBuild: validatedArgs.full || options.full,
+            watchMode: validatedArgs.watch || options.watch,
+            clearCache: validatedArgs.clearCache || options.clearCache,
+            verbose: validatedArgs.verbose || options.verbose
+          });
+        }, 'let there be light');
       });
 
     // Add regular genesis command as well
@@ -38,8 +73,17 @@ export class CLI {
       .command('genesis')
       .description('Compile project using genesis.sun')
       .option('-f, --file <file>', 'Path to genesis.sun file', './genesis.sun')
+      .option('--full', 'Force full build (disable incremental compilation)')
+      .option('--watch', 'Enable watch mode with incremental compilation')
+      .option('--clear-cache', 'Clear incremental compilation cache')
+      .option('-v, --verbose', 'Verbose output')
       .action(async (options) => {
-        await this.compileGenesis(options.file);
+        await this.compileGenesis(options.file, {
+          forceFullBuild: options.full,
+          watchMode: options.watch,
+          clearCache: options.clearCache,
+          verbose: options.verbose
+        });
       });
 
     // Add GitHub import command
@@ -85,9 +129,27 @@ export class CLI {
           process.exit(1);
         }
       });
+
+    // Add debug command
+    this.program
+      .command('debug <sunscript-file>')
+      .description('Start interactive debugging session for SunScript')
+      .option('-t, --target <file>', 'Compiled target file to debug against')
+      .option('-m, --sourcemap <file>', 'Source map file (optional)')
+      .action(async (sunscriptFile, options) => {
+        await this.startDebugSession(sunscriptFile, options);
+      });
   }
 
-  private async compileGenesis(genesisPath: string): Promise<void> {
+  private async compileGenesis(
+    genesisPath: string, 
+    options: {
+      forceFullBuild?: boolean;
+      watchMode?: boolean;
+      clearCache?: boolean;
+      verbose?: boolean;
+    } = {}
+  ): Promise<void> {
     try {
       // Check if genesis file exists
       await fs.access(genesisPath);
@@ -100,15 +162,17 @@ export class CLI {
     const { GenesisCompiler } = await import('../compiler/GenesisCompiler');
     const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
     
-    // Create dramatic effect
-    console.log(chalk.blue('\n🌌 In the beginning was the void...'));
-    await this.sleep(1000);
-    
-    console.log(chalk.yellow('⚡ And then the developer said: "Let there be light!"'));
-    await this.sleep(1000);
-    
-    console.log(chalk.green('✨ And there was code.\n'));
-    await this.sleep(500);
+    // Create dramatic effect (skip in watch mode)
+    if (!options.watchMode) {
+      console.log(chalk.blue('\n🌌 In the beginning was the void...'));
+      await this.sleep(1000);
+      
+      console.log(chalk.yellow('⚡ And then the developer said: "Let there be light!"'));
+      await this.sleep(1000);
+      
+      console.log(chalk.green('✨ And there was code.\n'));
+      await this.sleep(500);
+    }
 
     const compiler = new GenesisCompiler({
       outputDir: './dist', // Will be overridden by genesis file
@@ -119,31 +183,88 @@ export class CLI {
       })
     });
 
+    // Handle cache clearing
+    if (options.clearCache) {
+      await compiler.clearIncrementalCache();
+    }
+
     // Set up event listeners for progress
-    compiler.on('genesis:start', ({ file }) => {
-      console.log(chalk.cyan(`📖 Reading the sacred texts from ${file}...`));
-    });
+    if (!options.watchMode) {
+      compiler.on('genesis:start', ({ file }) => {
+        console.log(chalk.cyan(`📖 Reading the sacred texts from ${file}...`));
+      });
+
+      compiler.on('incremental:no-changes', () => {
+        console.log(chalk.green('⚡ No changes detected, using cached build'));
+      });
+
+      compiler.on('incremental:success', ({ result, changes }) => {
+        console.log(chalk.blue(`🔄 Incremental build: ${changes} changes in ${result.compilationTime}ms`));
+      });
+    }
 
     compiler.on('import:error', ({ file, error }) => {
       console.error(chalk.red(`❌ Failed to manifest ${file}: ${error.message}`));
     });
 
-    compiler.on('genesis:success', ({ project, fileCount }) => {
-      console.log(chalk.green(`\n🎉 Creation complete!`));
-      console.log(chalk.green(`   Project: ${project}`));
-      console.log(chalk.green(`   Files created: ${fileCount}`));
+    compiler.on('genesis:success', ({ project, fileCount, incremental }) => {
+      if (!options.watchMode) {
+        console.log(chalk.green(`\n🎉 Creation complete!`));
+        console.log(chalk.green(`   Project: ${project}`));
+        console.log(chalk.green(`   Files processed: ${fileCount}`));
+        if (incremental) {
+          console.log(chalk.blue(`   ⚡ Incremental compilation enabled`));
+        }
+      }
     });
 
     try {
-      const result = await compiler.compileProject(genesisPath);
-      await compiler.writeGenesisOutput(result);
-      
-      console.log(chalk.blue('\n🌍 And the developer saw that the code was good.'));
-      console.log(chalk.gray(`Output written to: ${result.buildConfig?.output || './dist'}\n`));
+      if (options.watchMode) {
+        // Start watch mode
+        await compiler.startWatchMode(genesisPath);
+        
+        // Keep the process running
+        console.log(chalk.blue('👀 Watching for changes... Press Ctrl+C to stop.'));
+        process.on('SIGINT', () => {
+          console.log(chalk.yellow('\n👋 Watch mode stopped.'));
+          process.exit(0);
+        });
+        
+        // Keep process alive
+        setInterval(() => {}, 1000);
+        
+      } else {
+        // Regular compilation
+        const result = await compiler.compileProject(genesisPath, {
+          incremental: !options.forceFullBuild,
+          forceFullBuild: options.forceFullBuild,
+          verbose: options.verbose
+        });
+        
+        await compiler.writeGenesisOutput(result);
+        
+        if (result.incremental?.cacheHit) {
+          console.log(chalk.green('\n⚡ Lightning fast! No changes detected.'));
+        } else {
+          console.log(chalk.blue('\n🌍 And the developer saw that the code was good.'));
+          
+          if (result.incremental) {
+            console.log(chalk.gray(`   Incremental build: ${result.incremental.changesSummary}`));
+            console.log(chalk.gray(`   Compilation time: ${result.incremental.compilationTime}ms`));
+          }
+        }
+        
+        console.log(chalk.gray(`   Output written to: ${result.buildConfig?.output || './dist'}\n`));
+      }
       
     } catch (error: any) {
       console.error(chalk.red(`\n💥 Creation failed: ${error.message}`));
       console.log(chalk.yellow('🔧 Check your genesis.sun file and try again.'));
+      
+      if (options.verbose) {
+        console.error(error.stack);
+      }
+      
       process.exit(1);
     }
   }
@@ -216,6 +337,68 @@ export class CLI {
     }
   }
 
+  private async startDebugSession(sunscriptFile: string, options: any): Promise<void> {
+    console.log(chalk.blue('🐛 Starting SunScript Debug Session...'));
+    
+    try {
+      // Check if SunScript file exists
+      await fs.access(sunscriptFile);
+    } catch {
+      console.error(chalk.red(`❌ SunScript file not found: ${sunscriptFile}`));
+      process.exit(1);
+    }
+
+    // Determine target file
+    let targetFile = options.target;
+    if (!targetFile) {
+      // Try to find compiled output
+      const baseName = path.basename(sunscriptFile, '.sun');
+      const possibleTargets = [
+        `./dist/${baseName}.js`,
+        `./build/${baseName}.js`,
+        `./out/${baseName}.js`,
+        `./${baseName}.js`
+      ];
+      
+      for (const candidate of possibleTargets) {
+        try {
+          await fs.access(candidate);
+          targetFile = candidate;
+          break;
+        } catch {
+          // Continue searching
+        }
+      }
+      
+      if (!targetFile) {
+        console.log(chalk.yellow('⚠️  No compiled target file found.'));
+        console.log(chalk.cyan('💡 Compile your SunScript first or specify target with -t option'));
+        console.log(chalk.gray('   Example: sunscript debug app.sun -t ./dist/app.js'));
+        process.exit(1);
+      }
+    }
+
+    try {
+      await fs.access(targetFile);
+    } catch {
+      console.error(chalk.red(`❌ Target file not found: ${targetFile}`));
+      process.exit(1);
+    }
+
+    console.log(chalk.green(`✅ Found target file: ${targetFile}`));
+
+    const { DebugCLI } = await import('../debugging/DebugCLI');
+    const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+
+    const aiProvider = new OpenAIProvider({
+      apiKey: process.env.OPENAI_API_KEY,
+      model: 'gpt-4-turbo-preview'
+    });
+
+    const debugCli = new DebugCLI(aiProvider);
+    await debugCli.startDebugSession(sunscriptFile, targetFile);
+  }
+
   private async generateGenesisFile(result: any, githubUrl: string): Promise<void> {
     const { projectStructure } = result;
     const repoMatch = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
@@ -270,11 +453,66 @@ ${Object.entries(result.dependencies).map(([name, version]) =>
     console.log(chalk.green('📄 Generated genesis.sun file'));
   }
 
+  private async handleCommand<T>(operation: () => Promise<T>, commandName: string): Promise<T> {
+    return withCLIErrorHandling(operation, commandName, this.cliErrorHandler, {
+      verbose: process.env.SUNSCRIPT_VERBOSE === 'true',
+      showSuggestions: true,
+      colorize: process.stdout.isTTY
+    });
+  }
+
+  private setupErrorHandling(): void {
+    // Handle uncaught exceptions
+    process.on('uncaughtException', async (error) => {
+      await this.logger.fatal('Uncaught exception', error);
+      await this.cliErrorHandler.handleError(error, 'uncaught exception', {
+        verbose: true,
+        showSuggestions: false,
+        colorize: process.stdout.isTTY
+      });
+      process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', async (reason, promise) => {
+      const error = reason instanceof Error ? reason : new Error(String(reason));
+      await this.logger.fatal('Unhandled promise rejection', error, { promise: promise.toString() });
+      await this.cliErrorHandler.handleError(error, 'unhandled promise rejection', {
+        verbose: true,
+        showSuggestions: false,
+        colorize: process.stdout.isTTY
+      });
+      process.exit(1);
+    });
+
+    // Handle SIGINT (Ctrl+C)
+    process.on('SIGINT', async () => {
+      console.log(chalk.yellow('\n⚠️  Operation cancelled by user'));
+      await this.logger.info('Operation cancelled by user (SIGINT)');
+      process.exit(0);
+    });
+
+    // Handle SIGTERM
+    process.on('SIGTERM', async () => {
+      await this.logger.info('Process terminated (SIGTERM)');
+      process.exit(0);
+    });
+  }
+
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   public async run(argv: string[]): Promise<void> {
-    await this.program.parseAsync(argv);
+    try {
+      await this.program.parseAsync(argv);
+    } catch (error) {
+      await this.cliErrorHandler.handleError(error as Error, 'CLI command execution', {
+        verbose: false,
+        showSuggestions: true,
+        colorize: true
+      });
+      process.exit(1);
+    }
   }
 }

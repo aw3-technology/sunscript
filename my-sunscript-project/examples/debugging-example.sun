@@ -1,0 +1,70 @@
+@project "Debugging Example"
+@version "1.0.0"
+@author "SunScript Debugger Demo"
+@context application development
+
+# Example SunScript application with intentional bugs for debugging demonstration
+
+function validateUserInput {
+    check if the user provided their name
+    verify the name is not empty
+    ensure the name contains only letters
+    return true if valid otherwise false
+}
+
+function calculateDiscount {
+    get the user's purchase amount
+    if the amount is greater than 100 dollars then
+        apply a 10 percent discount
+    otherwise if the amount is greater than 50 dollars then
+        apply a 5 percent discount
+    else
+        no discount applies
+    return the final amount after discount
+}
+
+function processOrder {
+    validate the user input first
+    if the validation passes then
+        calculate the discount for this order
+        save the order to the database
+        send confirmation email to the user
+        update the inventory
+    else
+        show error message about invalid input
+        log the validation failure
+    end the order processing
+}
+
+component UserManager {
+    manage user registration and authentication
+    store user information securely
+    handle password validation
+    track user login attempts
+    provide user profile management
+}
+
+component OrderProcessor {
+    handle incoming customer orders
+    validate order information
+    calculate pricing and discounts
+    coordinate with inventory system
+    manage order status updates
+    send notifications to customers
+}
+
+# Test scenarios that might cause errors:
+function testErrorScenarios {
+    try to process an order with empty user name
+    attempt to calculate discount with negative amount
+    test with user name containing special characters
+    verify behavior when database is unavailable
+    check email sending when service is down
+}
+
+# AI Questions for debugging:
+?? what happens if the user name contains numbers?
+?? how should we handle network timeouts during email sending?
+?? should we validate the purchase amount before calculating discounts?
+?? what if the database save operation fails?
+?? how can we make error messages more helpful for users?

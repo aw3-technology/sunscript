@@ -2,11 +2,13 @@ import { EventEmitter } from 'events';
 import { Lexer } from '../lexer/Lexer';
 import { GenesisParser } from '../parser/GenesisParser';
 import { SunScriptCompiler } from './Compiler';
+import { IncrementalCompiler, IncrementalCompilationOptions } from '../incremental/IncrementalCompiler';
 import { CompilerConfig, CompilationResult, AIContext } from '../types';
 import { GenesisProgram } from '../types/ast';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
+import chalk from 'chalk';
 
 export interface GenesisCompilationResult {
   project: {
@@ -17,10 +19,17 @@ export interface GenesisCompilationResult {
   files: Map<string, CompilationResult>;
   entrypoints: Map<string, string>;
   buildConfig: any;
+  incremental?: {
+    enabled: boolean;
+    changesSummary: string;
+    compilationTime: number;
+    cacheHit: boolean;
+  };
 }
 
 export class GenesisCompiler extends EventEmitter {
   private baseCompiler: SunScriptCompiler;
+  private incrementalCompiler?: IncrementalCompiler;
   private projectRoot: string;
   private sourceRoot: string;
   private outputRoot: string;
@@ -33,7 +42,10 @@ export class GenesisCompiler extends EventEmitter {
     this.outputRoot = path.join(this.projectRoot, 'dist');
   }
 
-  async compileProject(genesisPath: string): Promise<GenesisCompilationResult> {
+  async compileProject(
+    genesisPath: string, 
+    options: { incremental?: boolean; forceFullBuild?: boolean; verbose?: boolean } = {}
+  ): Promise<GenesisCompilationResult> {
     this.emit('genesis:start', { file: genesisPath });
     
     try {
@@ -62,14 +74,59 @@ export class GenesisCompiler extends EventEmitter {
         entrypoints: new Map(),
         buildConfig: genesis.buildConfig
       };
+
+      // Initialize incremental compiler if requested
+      if (options.incremental !== false) {
+        this.incrementalCompiler = new IncrementalCompiler(
+          this.config,
+          this.sourceRoot,
+          this.outputRoot
+        );
+
+        // Set up event forwarding
+        this.incrementalCompiler.on('compile:start', (data) => 
+          this.emit('incremental:start', data)
+        );
+        this.incrementalCompiler.on('compile:no-changes', () => 
+          this.emit('incremental:no-changes')
+        );
+        this.incrementalCompiler.on('compile:incremental-success', (data) => 
+          this.emit('incremental:success', data)
+        );
+      }
       
       // Apply global context and directives to compiler config
       if (genesis.globalDirectives) {
         this.applyGlobalDirectives(genesis.globalDirectives);
       }
       
-      // Compile all imported files
-      await this.compileImports(genesis, result);
+      // Use incremental compilation if available
+      if (this.incrementalCompiler && options.incremental !== false) {
+        const incrementalOptions: IncrementalCompilationOptions = {
+          forceFullBuild: options.forceFullBuild,
+          verbose: options.verbose
+        };
+
+        const incrementalResult = await this.incrementalCompiler.compile(incrementalOptions);
+        
+        if (incrementalResult.success) {
+          result.incremental = {
+            enabled: true,
+            changesSummary: incrementalResult.changesSummary,
+            compilationTime: incrementalResult.compilationTime,
+            cacheHit: incrementalResult.cacheHit
+          };
+
+          if (options.verbose && incrementalResult.cacheHit) {
+            console.log(chalk.green('⚡ No changes detected, using cached build'));
+          } else if (options.verbose) {
+            console.log(chalk.blue(`🔄 Incremental build: ${incrementalResult.changesSummary}`));
+          }
+        }
+      } else {
+        // Fallback to traditional compilation
+        await this.compileImports(genesis, result);
+      }
       
       // Process entrypoints
       if (genesis.entrypoints) {
@@ -83,7 +140,12 @@ export class GenesisCompiler extends EventEmitter {
         this.applyBuildConfig(genesis.buildConfig);
       }
       
-      this.emit('genesis:success', { project: genesis.projectName, fileCount: result.files.size });
+      this.emit('genesis:success', { 
+        project: genesis.projectName, 
+        fileCount: result.files.size,
+        incremental: !!result.incremental
+      });
+      
       return result;
       
     } catch (error) {
@@ -238,6 +300,39 @@ export class GenesisCompiler extends EventEmitter {
       case 'python': return 'py';
       case 'html': return 'html';
       default: return 'js';
+    }
+  }
+
+  async startWatchMode(genesisPath: string): Promise<void> {
+    if (!this.incrementalCompiler) {
+      // Initialize incremental compiler for watch mode
+      await this.compileProject(genesisPath, { incremental: true });
+    }
+
+    if (this.incrementalCompiler) {
+      console.log(chalk.blue('👀 Starting watch mode with incremental compilation...'));
+      
+      this.incrementalCompiler.on('compile:incremental-success', (data) => {
+        const { result, changes } = data;
+        console.log(chalk.green(`⚡ Incremental build completed: ${changes} changes, ${result.compilationTime}ms`));
+      });
+
+      this.incrementalCompiler.on('compile:no-changes', () => {
+        console.log(chalk.gray('📄 File saved, no changes detected'));
+      });
+
+      await this.incrementalCompiler.enableWatchMode();
+    } else {
+      throw new Error('Could not initialize incremental compiler for watch mode');
+    }
+  }
+
+  async clearIncrementalCache(): Promise<void> {
+    if (this.incrementalCompiler) {
+      const { ChangeDetector } = await import('../incremental/ChangeDetector');
+      const detector = new ChangeDetector(this.projectRoot);
+      await detector.clearCache();
+      console.log(chalk.yellow('🧹 Incremental compilation cache cleared'));
     }
   }
 }
