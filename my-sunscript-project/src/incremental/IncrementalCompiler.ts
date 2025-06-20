@@ -279,7 +279,7 @@ export class IncrementalCompiler extends EventEmitter {
   }
 
   private generateChangesSummary(changes: FileChange[]): string {
-    const summary = [];
+    const summary: string[] = [];
     
     const added = changes.filter(c => c.changeType === 'added').length;
     const modified = changes.filter(c => c.changeType === 'modified').length;

@@ -35,7 +35,7 @@ export interface QuickFix {
 
 export class RuntimeErrorTranslator {
   private aiProvider: AIProvider;
-  private commonErrorPatterns: Map<string, string>;
+  private commonErrorPatterns: Map<string, string> = new Map();
 
   constructor(aiProvider: AIProvider) {
     this.aiProvider = aiProvider;

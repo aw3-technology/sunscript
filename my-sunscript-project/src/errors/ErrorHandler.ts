@@ -46,10 +46,10 @@ export class ErrorHandler {
         sunScriptError.message,
         {
           context: {
-            ...sunScriptError.context,
+            ...(sunScriptError.context || {}),
             operation: context.operation,
             stage: context.stage,
-            ...context.additionalInfo
+            ...(context.additionalInfo || {})
           },
           filePath: sunScriptError.filePath || context.filePath,
           line: sunScriptError.line,

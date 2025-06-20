@@ -203,11 +203,15 @@ export class ConfigValidator {
     if (context.requirements && Array.isArray(context.requirements)) {
       for (let i = 0; i < context.requirements.length; i++) {
         const req = context.requirements[i];
-        const safetyCheck = InputValidator.validateSafety?.(req);
-        if (safetyCheck && !safetyCheck.safe) {
+        // Check for basic safety using existing validation
+        const reqValidation = InputValidator.validateAIPrompt(req, {
+          blockDangerousPatterns: true,
+          allowSystemPrompts: false
+        });
+        if (!reqValidation.valid) {
           result.errors.push({
             field: `requirements[${i}]`,
-            message: `Unsafe content in requirement: ${safetyCheck.issues.join(', ')}`,
+            message: `Unsafe content in requirement: ${reqValidation.errors.map(e => e.message).join(', ')}`,
             value: req,
             rule: 'safety'
           });

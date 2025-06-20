@@ -175,9 +175,8 @@ export class SecureShellManager {
           cwd: safeWorkingDir,
           env: safeEnv,
           stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: options.timeout || 30000,
-          maxBuffer: options.maxBuffer || 1024 * 1024 // 1MB default
-        });
+          timeout: options.timeout || 30000
+        }) as any;
 
         let stdout = '';
         let stderr = '';
@@ -421,9 +420,9 @@ export class SecureShellManager {
     }
 
     try {
-      // Use secure file operations to remove the directory
-      const { SecureFileOperations } = await import('./SecureFileOperations');
-      await SecureFileOperations.removeDirectory(validation.resolvedPath);
+      // Use Node.js built-in fs.rm to remove directory recursively
+      const fs = await import('fs/promises');
+      await fs.rm(validation.resolvedPath, { recursive: true, force: true });
       
       globalLogger.info('Temp directory cleaned up successfully', {
         type: 'security',

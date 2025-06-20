@@ -288,7 +288,8 @@ export class GenesisValidator {
         }
         
         currentSection = null;
-        result[directive as keyof GenesisFileStructure] = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        const cleanValue = value.replace(/^["']|["']$/g, ''); // Remove quotes
+        (result as any)[directive] = cleanValue;
         continue;
       }
 
@@ -352,7 +353,7 @@ export class GenesisValidator {
       }
     }
 
-    result[sectionName as keyof GenesisFileStructure] = sectionData;
+    (result as any)[sectionName] = sectionData;
   }
 
   /**
