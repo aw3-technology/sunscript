@@ -99,4 +99,25 @@ SunScript is designed to make programming accessible through natural language wh
 
 ---
 
-*This documentation is maintained by the SunScript team and community contributors.*
+## 📄 License
+
+SunScript is licensed under the **SunScript Community License v1.1**.
+
+**You are free to:**
+- ✅ Use SunScript to build commercial applications and services
+- ✅ Modify and distribute SunScript source code with attribution
+- ✅ Create internal developer tools using SunScript
+
+**Restrictions:**
+- ❌ Cannot build competing code generation tools or platforms
+- ❌ Cannot resell SunScript itself as a standalone product
+- ❌ Cannot use SunScript trademarks without permission
+
+For commercial code generation licenses, contact: will.schulz@aw3.tech
+
+See the [LICENSE](../LICENSE) file for complete terms.
+
+---
+
+*This documentation is maintained by the SunScript team and community contributors.  
+© 2025 AW3 Technology, Inc. All Rights Reserved.*

@@ -23,8 +23,8 @@
     "compiler",
     "programming-language"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "AW3 Technology, Inc.",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@types/acorn": "^4.0.6",
     "acorn": "^8.15.0",

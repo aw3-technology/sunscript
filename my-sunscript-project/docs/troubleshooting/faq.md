@@ -462,10 +462,20 @@ Yes, commercial support options include:
 
 ### What's the licensing model?
 
-- **Open Source**: MIT license for core compiler
-- **Commercial**: Enterprise features require license
-- **AI Providers**: Separate billing for OpenAI/Anthropic
-- **Self-hosted**: Use your own infrastructure freely
+- **Community License**: SunScript Community License v1.1 (Custom License)
+- **Free for Applications**: Build and sell applications using SunScript-generated code
+- **Commercial Code Generation**: Enterprise license required for competing products
+- **AI Providers**: Separate billing for OpenAI/Anthropic usage
+- **Self-hosted**: Use your own infrastructure freely for permitted use cases
+
+**Key Points:**
+- ✅ **Free to use** SunScript for building applications and services
+- ✅ **Commercial use allowed** for applications built with SunScript
+- ✅ **Modify and distribute** SunScript source code with attribution
+- ❌ **Cannot compete** by building similar code generation tools
+- ❌ **Cannot resell** SunScript itself as a product
+
+For commercial code generation products, contact: will.schulz@aw3.tech
 
 ## Troubleshooting Common Issues
 
