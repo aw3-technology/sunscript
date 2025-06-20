@@ -306,6 +306,7 @@ export class CodeAnalyzer {
         name,
         methods: [],
         properties: [],
+        constructor: undefined,
         purpose: `Class ${name}`,
         isExported: content.includes(`export`) && content.includes(name)
       });
@@ -369,6 +370,7 @@ export class CodeAnalyzer {
         name,
         methods: [],
         properties: [],
+        constructor: undefined,
         purpose: `Class ${name}`,
         isExported: true
       });
