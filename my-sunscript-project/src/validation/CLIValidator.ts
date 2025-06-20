@@ -19,7 +19,14 @@ export interface CLIValidationOptions {
 }
 
 export class CLIValidator {
-  private static rules = InputValidator.createRules();
+  private static _rules: any;
+  
+  private static get rules() {
+    if (!this._rules) {
+      this._rules = InputValidator.createRules();
+    }
+    return this._rules;
+  }
 
   /**
    * Validate CLI command arguments
@@ -373,6 +380,23 @@ export class CLIValidator {
         verbose: [this.rules.boolean('Verbose must be a boolean')]
       },
 
+      run: {
+        file: [
+          this.rules.required('File is required'),
+          this.rules.string('File must be a string'),
+          this.rules.filePath('Invalid file path'),
+          {
+            name: 'sunExtension',
+            validator: (value: string) => value.endsWith('.sun'),
+            message: 'File must have .sun extension'
+          }
+        ],
+        full: [this.rules.boolean('Full must be a boolean')],
+        watch: [this.rules.boolean('Watch must be a boolean')],
+        clearCache: [this.rules.boolean('Clear cache must be a boolean')],
+        verbose: [this.rules.boolean('Verbose must be a boolean')]
+      },
+
       import: {
         url: [
           this.rules.required('GitHub URL is required'),
@@ -406,6 +430,7 @@ export class CLIValidator {
       compile: ['input'],
       genesis: [],
       let: [],
+      run: ['file'],
       import: ['url']
     };
 

@@ -26,7 +26,14 @@ export interface GenesisValidationOptions {
 }
 
 export class GenesisValidator {
-  private static rules = InputValidator.createRules();
+  private static _rules: any;
+  
+  private static get rules() {
+    if (!this._rules) {
+      this._rules = InputValidator.createRules();
+    }
+    return this._rules;
+  }
 
   // Valid directive names in Genesis files
   private static readonly VALID_DIRECTIVES = new Set([

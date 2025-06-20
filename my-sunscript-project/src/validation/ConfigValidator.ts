@@ -10,7 +10,14 @@ export interface ConfigValidationOptions {
 }
 
 export class ConfigValidator {
-  private static rules = InputValidator.createRules();
+  private static _rules: any;
+  
+  private static get rules() {
+    if (!this._rules) {
+      this._rules = InputValidator.createRules();
+    }
+    return this._rules;
+  }
 
   /**
    * Validate compiler configuration

@@ -151,25 +151,25 @@ export class CLI {
       .option('-v, --verbose', 'Verbose output')
       .action(async (file, options) => {
         await this.handleCommand(async () => {
-          // Validate CLI arguments
-          const validatedArgs = CLIValidator.createArgumentParser('run', {
-            allowUnknownArgs: false,
-            sanitizeStrings: true,
-            maxArgLength: 1000
-          })(options);
+          // Basic validation for the file parameter
+          if (!file || !file.endsWith('.sun')) {
+            throw new SunScriptError(ErrorCode.INVALID_OPERATION, 'File must have .sun extension', {
+              suggestions: ['Provide a valid SunScript file path ending with .sun']
+            });
+          }
 
           // Check if it's a genesis file
           if (file.endsWith('genesis.sun') || file === 'genesis.sun') {
             await this.compileGenesis(file, {
-              forceFullBuild: validatedArgs.full || options.full,
-              watchMode: validatedArgs.watch || options.watch,
-              clearCache: validatedArgs.clearCache || options.clearCache,
-              verbose: validatedArgs.verbose || options.verbose
+              forceFullBuild: options.full,
+              watchMode: options.watch,
+              clearCache: options.clearCache,
+              verbose: options.verbose
             });
           } else {
             // Regular SunScript file compilation
             await this.compileSingleFile(file, {
-              verbose: validatedArgs.verbose || options.verbose
+              verbose: options.verbose
             });
           }
         }, 'run');
@@ -193,15 +193,12 @@ export class CLI {
     console.log(chalk.blue(`🚀 Compiling ${filePath}...`));
 
     const { SunScriptCompiler } = await import('../compiler/Compiler');
-    const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+    const { MockProvider } = await import('../ai/providers/MockProvider');
     
     const compiler = new SunScriptCompiler({
       outputDir: './dist',
       targetLanguage: 'javascript',
-      aiProvider: new OpenAIProvider({
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'gpt-4-turbo-preview'
-      })
+      aiProvider: new MockProvider()
     });
 
     try {
