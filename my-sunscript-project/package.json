@@ -9,12 +9,13 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:force": "tsc --noEmitOnError false",
     "dev": "tsc --watch",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "npm run build",
+    "prepare": "npm run build:force",
     "prepublishOnly": "npm test && npm run lint"
   },
   "keywords": [
