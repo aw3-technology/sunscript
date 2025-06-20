@@ -271,18 +271,53 @@ export class CLI {
 
   private async importGitHubProject(githubUrl: string, options: any): Promise<void> {
     console.log(chalk.blue('🚀 Starting GitHub project import...'));
-    console.log(chalk.cyan(`📦 Repository: ${githubUrl}`));
-
-    const { GitHubFetcher } = await import('../utils/GitHubFetcher');
-    const { ReverseCompiler } = await import('../reverse/ReverseCompiler');
-    const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
 
     try {
+      // Import security manager
+      const { PathSecurityManager } = await import('../security/PathSecurityManager');
+      
+      // Validate GitHub URL for security
+      const urlValidation = PathSecurityManager.validateGitHubUrl(githubUrl);
+      if (!urlValidation.valid) {
+        console.error(chalk.red(`❌ Invalid GitHub URL: ${urlValidation.errors.join(', ')}`));
+        process.exit(1);
+      }
+
+      console.log(chalk.cyan(`📦 Repository: ${urlValidation.owner}/${urlValidation.repo}`));
+
+      // Validate and sanitize output directory
+      const outputValidation = await PathSecurityManager.validatePath(options.output, {
+        allowedDirectories: PathSecurityManager.getProjectBoundaries()
+      });
+
+      if (!outputValidation.valid) {
+        console.error(chalk.red(`❌ Invalid output directory: ${outputValidation.errors.join(', ')}`));
+        process.exit(1);
+      }
+
+      const safeOutputDir = outputValidation.resolvedPath;
+
+      // Validate source directory
+      const sourceValidation = await PathSecurityManager.validatePath(options.source, {
+        allowedDirectories: PathSecurityManager.getProjectBoundaries()
+      });
+
+      if (!sourceValidation.valid) {
+        console.error(chalk.red(`❌ Invalid source directory: ${sourceValidation.errors.join(', ')}`));
+        process.exit(1);
+      }
+
+      const safeSourceDir = sourceValidation.resolvedPath;
+
+      const { GitHubFetcher } = await import('../utils/GitHubFetcher');
+      const { ReverseCompiler } = await import('../reverse/ReverseCompiler');
+      const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+
       // Fetch the GitHub repository
       const fetcher = new GitHubFetcher();
       console.log(chalk.yellow('📥 Downloading repository...'));
       
-      await fetcher.fetchFromUrl(githubUrl, options.output);
+      await fetcher.fetchFromUrl(githubUrl, safeOutputDir);
 
       // Set up reverse compiler
       const aiProvider = new OpenAIProvider({
@@ -296,8 +331,8 @@ export class CLI {
 
       // Reverse compile the project
       const result = await reverseCompiler.reverseCompile({
-        inputDir: options.output,
-        outputDir: options.source,
+        inputDir: safeOutputDir,
+        outputDir: safeSourceDir,
         aiProvider,
         includeComments: options.comments !== false,
         preserveStructure: true
@@ -307,8 +342,8 @@ export class CLI {
       await this.generateGenesisFile(result, githubUrl);
 
       console.log(chalk.green('\n🎉 Import complete!'));
-      console.log(chalk.green(`   Original code: ${options.output}`));
-      console.log(chalk.green(`   SunScript files: ${options.source}`));
+      console.log(chalk.green(`   Original code: ${path.relative(process.cwd(), safeOutputDir)}`));
+      console.log(chalk.green(`   SunScript files: ${path.relative(process.cwd(), safeSourceDir)}`));
       console.log(chalk.green(`   Files converted: ${result.files.size}`));
       console.log(chalk.green(`   Project type: ${result.projectStructure.type}`));
 
@@ -341,51 +376,71 @@ export class CLI {
     console.log(chalk.blue('🐛 Starting SunScript Debug Session...'));
     
     try {
-      // Check if SunScript file exists
-      await fs.access(sunscriptFile);
-    } catch {
-      console.error(chalk.red(`❌ SunScript file not found: ${sunscriptFile}`));
-      process.exit(1);
-    }
+      // Import security manager
+      const { PathSecurityManager } = await import('../security/PathSecurityManager');
+      
+      // Validate SunScript file path
+      const sunscriptValidation = await PathSecurityManager.validatePath(sunscriptFile, {
+        allowedExtensions: ['.sun'],
+        requireExists: true,
+        allowedDirectories: PathSecurityManager.getProjectBoundaries()
+      });
 
-    // Determine target file
-    let targetFile = options.target;
-    if (!targetFile) {
-      // Try to find compiled output
-      const baseName = path.basename(sunscriptFile, '.sun');
-      const possibleTargets = [
-        `./dist/${baseName}.js`,
-        `./build/${baseName}.js`,
-        `./out/${baseName}.js`,
-        `./${baseName}.js`
-      ];
-      
-      for (const candidate of possibleTargets) {
-        try {
-          await fs.access(candidate);
-          targetFile = candidate;
-          break;
-        } catch {
-          // Continue searching
-        }
-      }
-      
-      if (!targetFile) {
-        console.log(chalk.yellow('⚠️  No compiled target file found.'));
-        console.log(chalk.cyan('💡 Compile your SunScript first or specify target with -t option'));
-        console.log(chalk.gray('   Example: sunscript debug app.sun -t ./dist/app.js'));
+      if (!sunscriptValidation.valid) {
+        console.error(chalk.red(`❌ Invalid SunScript file: ${sunscriptValidation.errors.join(', ')}`));
         process.exit(1);
       }
-    }
 
-    try {
-      await fs.access(targetFile);
-    } catch {
-      console.error(chalk.red(`❌ Target file not found: ${targetFile}`));
-      process.exit(1);
-    }
+      const validatedSunScriptFile = sunscriptValidation.resolvedPath;
 
-    console.log(chalk.green(`✅ Found target file: ${targetFile}`));
+      // Determine target file
+      let targetFile = options.target;
+      if (!targetFile) {
+        // Try to find compiled output safely
+        const baseName = PathSecurityManager.sanitizeFilename(path.basename(validatedSunScriptFile, '.sun'));
+        const possibleTargets = [
+          `./dist/${baseName}.js`,
+          `./build/${baseName}.js`,
+          `./out/${baseName}.js`,
+          `./${baseName}.js`
+        ];
+        
+        for (const candidate of possibleTargets) {
+          const candidateValidation = await PathSecurityManager.validatePath(candidate, {
+            allowedExtensions: ['.js', '.ts'],
+            requireExists: true,
+            allowedDirectories: PathSecurityManager.getProjectBoundaries()
+          });
+
+          if (candidateValidation.valid) {
+            targetFile = candidateValidation.resolvedPath;
+            break;
+          }
+        }
+        
+        if (!targetFile) {
+          console.log(chalk.yellow('⚠️  No compiled target file found.'));
+          console.log(chalk.cyan('💡 Compile your SunScript first or specify target with -t option'));
+          console.log(chalk.gray('   Example: sunscript debug app.sun -t ./dist/app.js'));
+          process.exit(1);
+        }
+      } else {
+        // Validate user-provided target file
+        const targetValidation = await PathSecurityManager.validatePath(targetFile, {
+          allowedExtensions: ['.js', '.ts', '.py', '.java', '.go', '.rs'],
+          requireExists: true,
+          allowedDirectories: PathSecurityManager.getProjectBoundaries()
+        });
+
+        if (!targetValidation.valid) {
+          console.error(chalk.red(`❌ Invalid target file: ${targetValidation.errors.join(', ')}`));
+          process.exit(1);
+        }
+
+        targetFile = targetValidation.resolvedPath;
+      }
+
+      console.log(chalk.green(`✅ Found target file: ${path.relative(process.cwd(), targetFile)}`));
 
     const { DebugCLI } = await import('../debugging/DebugCLI');
     const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
@@ -395,8 +450,13 @@ export class CLI {
       model: 'gpt-4-turbo-preview'
     });
 
-    const debugCli = new DebugCLI(aiProvider);
-    await debugCli.startDebugSession(sunscriptFile, targetFile);
+      const debugCli = new DebugCLI(aiProvider);
+      await debugCli.startDebugSession(validatedSunScriptFile, targetFile);
+      
+    } catch (error) {
+      console.error(chalk.red(`❌ Failed to start debug session: ${(error as Error).message}`));
+      process.exit(1);
+    }
   }
 
   private async generateGenesisFile(result: any, githubUrl: string): Promise<void> {

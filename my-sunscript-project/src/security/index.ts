@@ -4,6 +4,8 @@ export * from './FilePermissionManager';
 export * from './SecureTempFileManager';
 export * from './InputSanitizer';
 export * from './SecureFileOperations';
+export * from './PathSecurityManager';
+export * from './SecureShellManager';
 
 // Re-export commonly used utilities
 export {

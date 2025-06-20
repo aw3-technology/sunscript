@@ -7,6 +7,7 @@ import { ErrorHandler, globalErrorHandler, createFileNotFoundError, createParseE
 import { SunScriptError, ErrorCode, CompilationError, FileSystemError } from '../errors/SunScriptError';
 import { sunScriptFileOps, outputFileOps } from '../security';
 import { ConfigValidator, InputValidator } from '../validation';
+import { ErrorFormatter } from '../parser/ErrorFormatter';
 import * as path from 'path';
 
 export class SunScriptCompiler extends EventEmitter {
@@ -98,9 +99,9 @@ export class SunScriptCompiler extends EventEmitter {
       // Use sanitized source
       const sanitizedSource = sourceValidation.sanitized?.source || source;
 
-      // Lexical analysis
+      // Lexical analysis with error recovery
+      const lexer = new Lexer(sanitizedSource, true); // Enable error recovery
       const tokens = this.errorHandler.handleSync(() => {
-        const lexer = new Lexer(sanitizedSource);
         return lexer.tokenize();
       }, {
         operation: 'lexical analysis',
@@ -108,10 +109,33 @@ export class SunScriptCompiler extends EventEmitter {
         filePath: metadata.filePath
       });
       
-      // Parsing
+      // Parsing with error recovery
       const ast = this.errorHandler.handleSync(() => {
-        const parser = new Parser(tokens);
-        return parser.parse();
+        const parser = new Parser(tokens, sanitizedSource);
+        const program = parser.parse();
+        
+        // Report all errors but continue compilation
+        const parseErrors = parser.getAllErrors();
+        const lexerErrors = lexer.getErrors();
+        
+        if (parseErrors.length > 0 || lexerErrors.length > 0) {
+          this.emit('compilation:warnings', { 
+            file: metadata.filePath, 
+            parseErrors,
+            lexerErrors
+          });
+          
+          // Create comprehensive error report
+          const errorReport = ErrorFormatter.createErrorReport(
+            sanitizedSource,
+            parseErrors,
+            lexerErrors
+          );
+          
+          console.warn(errorReport);
+        }
+        
+        return program;
       }, {
         operation: 'syntax parsing',
         stage: 'parsing',

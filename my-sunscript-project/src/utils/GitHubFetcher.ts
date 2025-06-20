@@ -1,10 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import chalk from 'chalk';
-
-const execAsync = promisify(exec);
+import { SecureShellManager } from '../security/SecureShellManager';
+import { PathSecurityManager } from '../security/PathSecurityManager';
 
 export interface GitHubFetchOptions {
   owner: string;
@@ -15,33 +13,53 @@ export interface GitHubFetchOptions {
 }
 
 export class GitHubFetcher {
-  private tempDir: string;
-
-  constructor() {
-    this.tempDir = path.join(process.cwd(), '.sunscript-temp');
-  }
+  private tempDir?: string;
 
   async fetchRepository(options: GitHubFetchOptions): Promise<string> {
     const { owner, repo, branch = 'main', outputDir } = options;
+    
+    // Validate repository details
     const repoUrl = `https://github.com/${owner}/${repo}.git`;
-    const cloneDir = path.join(this.tempDir, `${owner}-${repo}`);
+    const urlValidation = PathSecurityManager.validateGitHubUrl(repoUrl);
+    if (!urlValidation.valid) {
+      throw new Error(`Invalid repository: ${urlValidation.errors.join(', ')}`);
+    }
+
+    // Validate output directory
+    const outputValidation = await PathSecurityManager.validatePath(outputDir, {
+      allowedDirectories: PathSecurityManager.getProjectBoundaries()
+    });
+    if (!outputValidation.valid) {
+      throw new Error(`Invalid output directory: ${outputValidation.errors.join(', ')}`);
+    }
 
     try {
-      // Create temp directory
-      await fs.mkdir(this.tempDir, { recursive: true });
+      // Create secure temp directory
+      this.tempDir = await SecureShellManager.createTempDirectory('github-clone-');
+      const sanitizedRepoName = PathSecurityManager.sanitizeFilename(`${owner}-${repo}`);
+      const cloneDir = await PathSecurityManager.safePath(this.tempDir, sanitizedRepoName);
 
       console.log(chalk.cyan(`📦 Cloning ${owner}/${repo}...`));
       
-      // Clone the repository
-      await execAsync(`git clone --depth 1 --branch ${branch} ${repoUrl} ${cloneDir}`);
+      // Clone the repository using secure shell execution
+      await SecureShellManager.executeGitCommand([
+        'clone',
+        '--depth', '1',
+        '--branch', branch,
+        repoUrl,
+        cloneDir
+      ], undefined, {
+        timeout: 60000,
+        validateOutput: true
+      });
       
-      // Create output directory
-      await fs.mkdir(outputDir, { recursive: true });
+      // Create output directory safely
+      await PathSecurityManager.createSafeDirectory(outputValidation.resolvedPath, true);
       
       // Copy files to output directory
-      await this.copyDirectory(cloneDir, outputDir);
+      await this.copyDirectory(cloneDir, outputValidation.resolvedPath);
       
-      console.log(chalk.green(`✅ Repository fetched to ${outputDir}`));
+      console.log(chalk.green(`✅ Repository fetched to ${path.relative(process.cwd(), outputValidation.resolvedPath)}`));
       
       return cloneDir;
       
@@ -52,48 +70,71 @@ export class GitHubFetcher {
   }
 
   async fetchFromUrl(githubUrl: string, outputDir: string): Promise<string> {
-    // Parse GitHub URL
-    const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (!match) {
-      throw new Error('Invalid GitHub URL. Format: https://github.com/owner/repo');
+    // Validate GitHub URL using security manager
+    const urlValidation = PathSecurityManager.validateGitHubUrl(githubUrl);
+    if (!urlValidation.valid) {
+      throw new Error(`Invalid GitHub URL: ${urlValidation.errors.join(', ')}`);
     }
 
-    const [, owner, repo] = match;
-    const cleanRepo = repo.replace(/\.git$/, '');
-
     return this.fetchRepository({
-      owner,
-      repo: cleanRepo,
+      owner: urlValidation.owner!,
+      repo: urlValidation.repo!,
       outputDir
     });
   }
 
   private async copyDirectory(src: string, dest: string): Promise<void> {
-    const entries = await fs.readdir(src, { withFileTypes: true });
+    // Validate both source and destination paths
+    const srcValidation = await PathSecurityManager.validatePath(src, {
+      requireExists: true,
+      allowedDirectories: [this.tempDir!]
+    });
+
+    const destValidation = await PathSecurityManager.validatePath(dest, {
+      allowedDirectories: PathSecurityManager.getProjectBoundaries()
+    });
+
+    if (!srcValidation.valid || !destValidation.valid) {
+      throw new Error(`Invalid copy paths: ${[...srcValidation.errors, ...destValidation.errors].join(', ')}`);
+    }
+
+    const entries = await fs.readdir(srcValidation.resolvedPath, { withFileTypes: true });
 
     for (const entry of entries) {
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-
-      // Skip .git directory
-      if (entry.name === '.git') {
+      // Sanitize entry name
+      const safeName = PathSecurityManager.sanitizeFilename(entry.name);
+      
+      // Skip dangerous files and directories
+      if (entry.name === '.git' || 
+          entry.name.startsWith('.') && entry.name.length > 1 ||
+          entry.name !== safeName) {
         continue;
       }
 
+      const srcPath = await PathSecurityManager.safePath(srcValidation.resolvedPath, safeName);
+      const destPath = await PathSecurityManager.safePath(destValidation.resolvedPath, safeName);
+
       if (entry.isDirectory()) {
-        await fs.mkdir(destPath, { recursive: true });
+        await PathSecurityManager.createSafeDirectory(destPath, true);
         await this.copyDirectory(srcPath, destPath);
       } else {
-        await fs.copyFile(srcPath, destPath);
+        // Validate file extension before copying
+        const ext = path.extname(safeName).toLowerCase();
+        const allowedExtensions = ['.js', '.ts', '.tsx', '.jsx', '.py', '.java', '.go', '.rs', 
+                                   '.json', '.md', '.txt', '.yml', '.yaml', '.toml', '.lock',
+                                   '.html', '.css', '.scss', '.less'];
+        
+        if (allowedExtensions.includes(ext) || !ext) {
+          await fs.copyFile(srcPath, destPath);
+        }
       }
     }
   }
 
   private async cleanup(): Promise<void> {
-    try {
-      await fs.rm(this.tempDir, { recursive: true, force: true });
-    } catch (error) {
-      // Ignore cleanup errors
+    if (this.tempDir) {
+      await SecureShellManager.cleanupTempDirectory(this.tempDir);
+      this.tempDir = undefined;
     }
   }
 }

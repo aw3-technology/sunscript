@@ -3,20 +3,39 @@ import { Token as TokenClass } from './Token';
 import { LexerError } from './LexerError';
 import { patterns, keywords } from './patterns';
 
+export interface LexerErrorInfo {
+  message: string;
+  position: Position;
+  char: string;
+  suggestions: string[];
+  recovered: boolean;
+}
+
 export class Lexer {
   private input: string;
   private position: number = 0;
   private line: number = 1;
   private column: number = 1;
   private tokens: Token[] = [];
+  private errors: LexerErrorInfo[] = [];
+  private enableErrorRecovery: boolean = true;
 
-  constructor(input: string) {
+  constructor(input: string, enableErrorRecovery: boolean = true) {
     this.input = input;
+    this.enableErrorRecovery = enableErrorRecovery;
   }
 
   public tokenize(): Token[] {
     while (!this.isAtEnd()) {
-      this.scanToken();
+      try {
+        this.scanToken();
+      } catch (error) {
+        if (this.enableErrorRecovery) {
+          this.recoverFromError(error as Error);
+        } else {
+          throw error;
+        }
+      }
     }
     
     this.addToken(TokenType.EOF, '');
@@ -113,6 +132,13 @@ export class Lexer {
       return;
     }
 
+    // Handle unexpected characters with error recovery
+    const char = this.peek();
+    if (this.isUnexpectedCharacter(char)) {
+      this.handleUnexpectedCharacter(char);
+      return;
+    }
+    
     // Default to TEXT for everything else
     const textStart = this.position;
     while (!this.isAtEnd() && 
@@ -128,6 +154,9 @@ export class Lexer {
       if (text) {
         this.addToken(TokenType.TEXT, text);
       }
+    } else {
+      // No progress made, advance one character to prevent infinite loop
+      this.advance();
     }
   }
 
@@ -184,5 +213,111 @@ export class Lexer {
       line: this.line,
       column: this.column
     }));
+  }
+  
+  private isUnexpectedCharacter(char: string): boolean {
+    // Check for characters that shouldn't appear in SunScript
+    const unexpectedChars = /[\x00-\x08\x0E-\x1F\x7F]|[^\x00-\x7F]/; // Control chars and non-ASCII
+    return unexpectedChars.test(char);
+  }
+  
+  private handleUnexpectedCharacter(char: string): void {
+    const errorInfo: LexerErrorInfo = {
+      message: `Unexpected character '${this.getCharacterDescription(char)}' (code: ${char.charCodeAt(0)})`,
+      position: { line: this.line, column: this.column },
+      char,
+      suggestions: this.getSuggestionsForCharacter(char),
+      recovered: true
+    };
+    
+    this.errors.push(errorInfo);
+    
+    // Skip the problematic character
+    this.advance();
+  }
+  
+  private recoverFromError(error: Error): void {
+    const char = this.peek();
+    const errorInfo: LexerErrorInfo = {
+      message: error.message || 'Unknown lexer error',
+      position: { line: this.line, column: this.column },
+      char,
+      suggestions: [
+        'Check for invalid characters',
+        'Ensure proper SunScript syntax',
+        'Remove or escape special characters'
+      ],
+      recovered: true
+    };
+    
+    this.errors.push(errorInfo);
+    
+    // Recovery strategy: advance until we find a safe character
+    while (!this.isAtEnd() && this.isUnexpectedCharacter(this.peek())) {
+      this.advance();
+    }
+  }
+  
+  private getCharacterDescription(char: string): string {
+    const code = char.charCodeAt(0);
+    
+    if (code === 0) return '\\0 (null)';
+    if (code === 9) return '\\t (tab)';
+    if (code === 10) return '\\n (newline)';
+    if (code === 13) return '\\r (carriage return)';
+    if (code < 32) return `\\x${code.toString(16).padStart(2, '0')} (control character)`;
+    if (code === 127) return '\\x7F (delete)';
+    if (code > 127) return `${char} (non-ASCII character)`;
+    
+    return char;
+  }
+  
+  private getSuggestionsForCharacter(char: string): string[] {
+    const suggestions: string[] = [];
+    const code = char.charCodeAt(0);
+    
+    if (code === 0) {
+      suggestions.push('Remove null characters from the source');
+    } else if (code < 32) {
+      suggestions.push('Remove control characters');
+      suggestions.push('Use only printable ASCII characters');
+    } else if (code > 127) {
+      suggestions.push('Use ASCII characters only');
+      suggestions.push('Consider using string literals for non-ASCII content');
+    }
+    
+    // Common character substitutions
+    switch (char) {
+      case '\u2018': // Left single quotation mark
+      case '\u2019': // Right single quotation mark
+        suggestions.push("Use standard single quote ' instead");
+        break;
+      case '\u201C': // Left double quotation mark
+      case '\u201D': // Right double quotation mark
+        suggestions.push('Use standard double quote " instead');
+        break;
+      case '\u2013': // En dash
+      case '\u2014': // Em dash
+        suggestions.push('Use standard hyphen - instead');
+        break;
+    }
+    
+    if (suggestions.length === 0) {
+      suggestions.push('Remove or replace this character');
+    }
+    
+    return suggestions;
+  }
+  
+  public getErrors(): LexerErrorInfo[] {
+    return this.errors;
+  }
+  
+  public hasErrors(): boolean {
+    return this.errors.length > 0;
+  }
+  
+  public clearErrors(): void {
+    this.errors = [];
   }
 }
