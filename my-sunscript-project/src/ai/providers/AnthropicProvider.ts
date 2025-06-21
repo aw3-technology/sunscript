@@ -76,7 +76,7 @@ export class AnthropicProvider extends AIProvider {
       });
     }
     
-    this.config.model = config.model || 'claude-3-5-sonnet-20241022';
+    this.config.model = config.model || 'claude-4-20241201';
     this.maxRetries = config.maxRetries || 3;
     this.timeout = config.timeout || 30000;
   }

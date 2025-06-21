@@ -204,7 +204,7 @@ export class CLI {
       targetLanguage: 'javascript',
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-3-5-sonnet-20241022'
+        model: 'claude-4-20241201'
       })
     });
 
@@ -249,7 +249,7 @@ export class CLI {
     }
 
     const { GenesisCompiler } = await import('../compiler/GenesisCompiler');
-    const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+    const { AnthropicProvider } = await import('../ai/providers/AnthropicProvider');
     
     // Create dramatic effect (skip in watch mode)
     if (!options.watchMode) {
@@ -266,9 +266,9 @@ export class CLI {
     const compiler = new GenesisCompiler({
       outputDir: './dist', // Will be overridden by genesis file
       targetLanguage: 'javascript', // Will be overridden by genesis file
-      aiProvider: new OpenAIProvider({
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'gpt-4-turbo-preview'
+      aiProvider: new AnthropicProvider({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: 'claude-4-20241201'
       })
     });
 
