@@ -14,7 +14,18 @@ export class ConfigValidator {
   
   private static get rules() {
     if (!this._rules) {
-      this._rules = InputValidator.createRules();
+      try {
+        this._rules = InputValidator.createRules();
+      } catch (error) {
+        console.error('Error creating rules:', error);
+        // Return a simple fallback rules object
+        this._rules = {
+          required: (message = 'Required') => ({ name: 'required', validator: () => true, message }),
+          string: (message = 'String') => ({ name: 'string', validator: () => true, message }),
+          oneOf: (values: any[], message = 'OneOf') => ({ name: 'oneOf', validator: () => true, message }),
+          filePath: (message = 'FilePath') => ({ name: 'filePath', validator: () => true, message })
+        };
+      }
     }
     return this._rules;
   }

@@ -174,9 +174,7 @@ export class CLI {
           }
         } catch (error: any) {
           console.error(chalk.red(`❌ Error: ${error.message}`));
-          if (options.verbose) {
-            console.error(error.stack);
-          }
+          console.error('Stack trace:', error.stack);
           process.exit(1);
         }
       });
