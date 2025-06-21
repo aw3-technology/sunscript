@@ -19,11 +19,44 @@ export class AnthropicProvider extends AIProvider {
     //   'Anthropic provider configuration'
     // );
     
-    const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    // Try to load .env file if it exists
+    let apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+    
+    if (!apiKey) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        
+        // Try multiple locations for .env file
+        const possibleEnvPaths = [
+          // Project root (where package.json is)
+          path.resolve(__dirname, '../../../.env'),
+          // Current working directory
+          path.resolve(process.cwd(), '.env'),
+          // Parent of current working directory (in case running from examples/)
+          path.resolve(process.cwd(), '../.env')
+        ];
+        
+        for (const envPath of possibleEnvPaths) {
+          if (fs.existsSync(envPath)) {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const match = envContent.match(/ANTHROPIC_API_KEY\s*=\s*(.+)/);
+            if (match) {
+              apiKey = match[1].replace(/["']/g, '').trim();
+              break; // Found it, stop looking
+            }
+          }
+        }
+      } catch (error) {
+        // Ignore .env loading errors
+      }
+    }
+    
     if (!apiKey) {
       throw new AIProviderError(ErrorCode.AI_AUTHENTICATION_FAILED, 'Anthropic API key is required', {
         suggestions: [
           'Set ANTHROPIC_API_KEY environment variable',
+          'Create a .env file with ANTHROPIC_API_KEY=your-key',
           'Pass apiKey in config object'
         ]
       });
@@ -43,7 +76,7 @@ export class AnthropicProvider extends AIProvider {
       });
     }
     
-    this.config.model = config.model || 'claude-3-sonnet-20240229';
+    this.config.model = config.model || 'claude-3-5-sonnet-20241022';
     this.maxRetries = config.maxRetries || 3;
     this.timeout = config.timeout || 30000;
   }
