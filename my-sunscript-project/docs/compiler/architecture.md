@@ -2,7 +2,7 @@
 
 ## Overview
 
-The SunScript compiler is a sophisticated multi-stage compilation system that transforms natural language programming constructs into efficient code in target languages. It combines traditional compiler techniques with AI-powered code generation to bridge the gap between human intent and executable code.
+The SunScript compiler is a natural language-first compilation system that transforms plain English programming intentions into production-ready code. It prioritizes natural language understanding over strict syntax, using Claude 4's advanced capabilities to bridge the gap between human intent and executable code.
 
 ## High-Level Architecture
 
@@ -27,25 +27,26 @@ The SunScript compiler is a sophisticated multi-stage compilation system that tr
 
 **Location**: `src/lexer/`
 
-The lexer tokenizes SunScript source code, handling both structured syntax and natural language text.
+The lexer implements SunScript's natural language-first philosophy, collecting complete phrases as semantic units.
 
 #### Key Features:
-- **Multi-mode tokenization**: Handles keywords, natural language, and AI directives
-- **Error recovery**: Continues processing despite invalid characters
-- **Unicode support**: Properly handles international characters
+- **Natural Language Priority**: Collects complete phrases as TEXT tokens rather than individual words
+- **Structural Keyword Detection**: Only tokenizes keywords when clearly structural and at statement boundaries
+- **Semantic Preservation**: Maintains the meaning and context of natural language intentions
 - **Position tracking**: Maintains line/column information for error reporting
+- **AI Directive Processing**: Handles special syntax for AI compilation hints
 
 #### Token Types:
 ```typescript
 enum TokenType {
-  // Keywords
+  // Keywords (only tokenized when clearly structural)
   FUNCTION = 'FUNCTION',
   COMPONENT = 'COMPONENT',
   WHEN = 'WHEN',
   THEN = 'THEN',
   
-  // Natural language
-  TEXT = 'TEXT',
+  // Natural language (primary token type)
+  TEXT = 'TEXT',           // Complete natural language phrases
   
   // AI directives
   AI_DIRECTIVE = 'AI_DIRECTIVE',
@@ -58,6 +59,40 @@ enum TokenType {
   
   // Special
   EOF = 'EOF'
+}
+```
+
+#### Natural Language Lexer Implementation:
+```typescript
+// Core lexer philosophy: Natural language first, structure second
+private scanToken(): void {
+  if (this.isAtStartOfStatement()) {
+    const lookAhead = this.peekWord();
+    if (lookAhead && this.isStructuralKeyword(lookAhead.toLowerCase())) {
+      // Only tokenize as keyword when clearly structural
+      this.advance(lookAhead.length);
+      const keywordType = keywords.get(lookAhead.toLowerCase());
+      this.addToken(TokenType[keywordType as keyof typeof TokenType], lookAhead);
+      return;
+    }
+  }
+  
+  // EVERYTHING ELSE IS NATURAL LANGUAGE
+  // This is the heart of SunScript - treat content as natural language by default
+  const naturalTextStart = this.position;
+  while (!this.isAtEnd() && 
+         this.peek() !== '\n' && 
+         this.peek() !== '{' && 
+         this.peek() !== '}' &&
+         this.peek() !== '@' &&
+         !this.input.substring(this.position).startsWith('??')) {
+    this.advance();
+  }
+  
+  const naturalText = this.input.substring(naturalTextStart, this.position).trim();
+  if (naturalText.length > 0) {
+    this.addToken(TokenType.TEXT, naturalText);
+  }
 }
 ```
 
@@ -124,8 +159,8 @@ interface AIProvider {
 ```
 
 #### Supported Providers:
-- **OpenAI GPT-4**: Production-ready, high-quality generation
-- **Anthropic Claude**: Alternative with different strengths
+- **Anthropic Claude Sonnet 4**: Default provider with superior natural language understanding (claude-sonnet-4-20250514)
+- **OpenAI GPT-4**: Alternative production-ready provider
 - **Local LLM**: Privacy-focused local processing
 - **Mock Provider**: Testing and development
 
@@ -156,12 +191,10 @@ The code generator transforms AST and AI analysis into target language code.
 5. **Validation**: Verify generated code quality
 
 #### Target Language Support:
-- **JavaScript**: ES6+, Node.js, Browser
+- **JavaScript**: ES6+, Node.js, Browser (primary target)
 - **TypeScript**: Type-safe with full type definitions
 - **Python**: 3.8+, async/await support
-- **Java**: Java 11+, Spring Boot integration
-- **Go**: Modern Go with modules
-- **Rust**: Safe systems programming
+- **HTML**: Complete web applications with embedded JavaScript
 
 #### Generator Architecture:
 ```typescript
@@ -277,11 +310,11 @@ class SunScriptDebugger {
 3. **Genesis processing**: Load project configuration
 4. **Security validation**: Validate all file paths and inputs
 
-### Stage 2: Lexical Analysis
-1. **Tokenization**: Convert source text to tokens
-2. **Error detection**: Identify lexical errors
-3. **Recovery**: Apply error recovery strategies
-4. **Token stream**: Produce clean token stream
+### Stage 2: Natural Language Lexical Analysis
+1. **Natural Language Collection**: Scan for complete phrases and sentences
+2. **Structural Element Detection**: Identify keywords only when clearly structural
+3. **Semantic Preservation**: Maintain context and meaning of natural language
+4. **Token stream**: Produce semantically meaningful token stream
 
 ### Stage 3: Syntax Analysis
 1. **Parsing**: Build Abstract Syntax Tree
@@ -289,11 +322,11 @@ class SunScriptDebugger {
 3. **AST validation**: Ensure tree structure integrity
 4. **Context building**: Prepare compilation context
 
-### Stage 4: AI Processing
-1. **Natural language extraction**: Identify NL constructs
-2. **AI provider selection**: Choose appropriate provider
-3. **Prompt engineering**: Build effective prompts
-4. **Response processing**: Parse and validate AI responses
+### Stage 4: Claude 4 Processing
+1. **Natural language extraction**: Identify complete natural language intentions
+2. **Context building**: Prepare rich context for Claude 4 understanding
+3. **Prompt engineering**: Build effective prompts that leverage Claude 4's capabilities
+4. **Response processing**: Parse and validate Claude 4's production-ready code responses
 
 ### Stage 5: Code Generation
 1. **Template selection**: Choose target language templates

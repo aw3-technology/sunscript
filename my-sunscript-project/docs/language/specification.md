@@ -8,19 +8,19 @@ SunScript is an AI-native programming language that bridges natural language and
 
 SunScript is built on three core principles:
 
-1. **Natural Expression**: Code should read like human language
-2. **AI-Assisted Development**: Leverage AI for intelligent compilation
+1. **Natural Language First**: Write in plain English - no strict syntax required
+2. **AI-Powered Compilation**: Claude 4 transforms your intentions into production code
 3. **Multi-Target Flexibility**: One language, many deployment targets
 
-## Syntax Overview
+## Natural Language Overview
 
 ### File Structure
 
-SunScript files use the `.sun` extension and consist of:
-- Function definitions
-- Component definitions
-- AI directives
-- Natural language expressions
+SunScript files use the `.sun` extension and embrace natural language:
+- Function definitions in plain English
+- Component descriptions in natural language
+- AI directives for compilation hints
+- Complete freedom in expression - no strict syntax rules
 
 ```sunscript
 // Basic SunScript file structure
@@ -116,9 +116,9 @@ component ProductCard {
 }
 ```
 
-### 3. Natural Language Expressions
+### 3. Natural Language Freedom
 
-SunScript supports rich natural language expressions for business logic.
+SunScript's core innovation: write exactly what you want in plain English. The lexer prioritizes natural language collection over keyword parsing.
 
 #### Conditional Logic
 
@@ -376,20 +376,46 @@ environments {
 
 ## Compilation Process
 
-### 1. Lexical Analysis
-- Tokenize SunScript source code
-- Handle natural language text
-- Process AI directives
+### 1. Natural Language Lexical Analysis
+- **Core Philosophy**: Natural language first, structure second
+- Collect complete phrases as TEXT tokens (e.g., "ask user for their name" → 1 TEXT token)
+- Only tokenize structural keywords when at statement start and clearly structural
+- Preserve semantic meaning and context of natural language intentions
+- Process AI directives and special syntax markers
+
+**Technical Implementation:**
+```typescript
+// SunScript lexer prioritizes natural language collection
+// Traditional lexers would tokenize each word separately
+// SunScript lexer scans for complete natural language phrases
+if (this.isAtStartOfStatement()) {
+  const lookAhead = this.peekWord();
+  if (lookAhead && this.isStructuralKeyword(lookAhead.toLowerCase())) {
+    // Only tokenize as keyword when clearly structural
+    this.addToken(TokenType.KEYWORD, lookAhead);
+    return;
+  }
+}
+
+// EVERYTHING ELSE IS NATURAL LANGUAGE
+// This is the heart of SunScript
+const naturalText = this.scanNaturalLanguage();
+this.addToken(TokenType.TEXT, naturalText);
+```
 
 ### 2. Parsing
 - Build Abstract Syntax Tree (AST)
 - Validate syntax structure
 - Apply error recovery
 
-### 3. AI Analysis
-- Send natural language to AI provider
-- Get structured code suggestions
-- Validate AI responses
+### 3. Claude 4 Analysis
+- Send natural language to Claude Sonnet 4
+- Receive production-ready code with:
+  - Error handling
+  - Input validation
+  - Best practices
+  - Clear documentation
+- Validate generated code structure
 
 ### 4. Code Generation
 - Generate target language code
@@ -524,8 +550,9 @@ function trainRecommendationModel {
 
 - **Current Version**: 1.0.0
 - **Minimum Node.js**: 16.0.0
-- **Supported AI Providers**: OpenAI GPT-4, Anthropic Claude, Local LLMs
-- **Target Languages**: JavaScript, TypeScript, Python, Java, Go, Rust
+- **Default AI Provider**: Anthropic Claude Sonnet 4 (claude-sonnet-4-20250514)
+- **Supported AI Providers**: Anthropic Claude, OpenAI GPT-4, Local LLMs
+- **Target Languages**: JavaScript, TypeScript, Python, HTML
 - **Framework Support**: React, Vue, Angular, Express, FastAPI, Django
 
 ---

@@ -6,7 +6,7 @@ Get up and running with SunScript in just 5 minutes! This guide will walk you th
 
 - **Node.js** 16.0.0 or higher
 - **npm** or **yarn** package manager
-- **AI Provider API Key** (OpenAI, Anthropic, or local LLM setup)
+- **Anthropic API Key** for Claude 4 (Recommended) or other AI provider
 
 ## Installation
 
@@ -44,22 +44,33 @@ node dist/bin/sunscript.js run genesis.sun
 
 ## Setup AI Provider
 
-SunScript requires an AI provider for compilation. Choose one:
+SunScript uses Claude 4 by default for superior natural language understanding and code generation.
 
-### OpenAI (Recommended)
+### Anthropic Claude 4 (Recommended)
+
+Create a `.env` file in your project root:
 
 ```bash
-export OPENAI_API_KEY="your-api-key-here"
+# .env
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
 ```
 
-### Anthropic Claude
+Or export it in your shell:
 
 ```bash
 export ANTHROPIC_API_KEY="your-api-key-here"
 ```
 
-### Local LLM (Advanced)
+**Note:** SunScript uses Claude Sonnet 4 (`claude-sonnet-4-20250514`) by default, providing state-of-the-art natural language to code compilation.
 
+### Alternative Providers
+
+#### OpenAI
+```bash
+export OPENAI_API_KEY="your-api-key-here"
+```
+
+#### Local LLM (Advanced)
 ```bash
 export LOCAL_LLM_URL="http://localhost:8080"
 ```
@@ -71,17 +82,22 @@ export LOCAL_LLM_URL="http://localhost:8080"
 Create a file called `hello.sun`:
 
 ```sunscript
+@context simple
+
 function greetUser {
-    Display a friendly greeting message
-    Include the current time
-    Make it welcoming and personal
+    ask user for their name
+    display friendly greeting message
+    include current time
+    make it welcoming and personal
 }
 
 function main {
-    Call greetUser to welcome the user
-    Show application startup message
+    call greetUser function
+    show application startup message
 }
 ```
+
+**Note:** SunScript embraces natural language! Write your intentions in plain English, and Claude 4 will generate the appropriate code.
 
 ### 2. Compile Your Program
 
@@ -93,37 +109,100 @@ sunscript run hello.sun
 sunscript compile hello.sun --target javascript
 ```
 
-This generates `hello.js`:
+This generates two files in your `dist` folder:
 
+**hello.greetUser.js:**
 ```javascript
 function greetUser() {
-    const currentTime = new Date().toLocaleTimeString();
-    const greeting = `Hello! Welcome to our application. The current time is ${currentTime}. We're excited to have you here!`;
-    console.log(greeting);
-    return greeting;
+    try {
+        // Get user's name with input validation
+        const userName = prompt("Hello! What's your name?");
+        
+        // Handle empty or null input
+        if (!userName || userName.trim() === "") {
+            alert("Hello there! It's wonderful to meet you!");
+            return;
+        }
+        
+        // Get current time and format it nicely
+        const now = new Date();
+        const currentTime = now.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+        });
+        
+        // Create personalized greeting message
+        const greetingMessage = `Good ${getTimeOfDay()}, ${userName}! 🌟\n\nIt's currently ${currentTime}, and I'm delighted to meet you today.\n\nWelcome! I hope you're having a wonderful time.`;
+        
+        alert(greetingMessage);
+        
+    } catch (error) {
+        console.error("Error in greetUser function:", error);
+        alert("Hello! Welcome, and have a great day! 😊");
+    }
 }
-
-function main() {
-    console.log("🚀 Application starting...");
-    greetUser();
-    console.log("✅ Startup complete!");
-}
-
-// Run the main function
-main();
 ```
+
+**hello.main.js:**
+```javascript
+function main() {
+    try {
+        console.log('Application starting...');
+        
+        // Call greetUser function
+        if (typeof greetUser === 'function') {
+            greetUser();
+        } else {
+            console.warn('greetUser function is not defined');
+        }
+        
+        console.log('Application startup complete');
+        
+    } catch (error) {
+        console.error('Error during application startup:', error.message);
+    }
+}
+```
+
+**Note:** Claude 4 generates production-ready code with proper error handling, input validation, and user-friendly features!
 
 ### 3. Run Your Program
 
+To run the generated code, you'll need to load both functions together:
+
 ```bash
-node hello.js
+# Create a simple runner
+cat > run-hello.js << 'EOF'
+const fs = require('fs');
+const greetUserCode = fs.readFileSync('./dist/hello.greetUser.js', 'utf8');
+const mainCode = fs.readFileSync('./dist/hello.main.js', 'utf8');
+
+// For Node.js environment
+const prompt = require('prompt-sync')();
+const alert = (msg) => console.log('\n' + msg + '\n');
+
+eval(greetUserCode);
+eval(mainCode);
+main();
+EOF
+
+# Run it
+node run-hello.js
 ```
 
 Output:
 ```
-🚀 Application starting...
-Hello! Welcome to our application. The current time is 2:30:45 PM. We're excited to have you here!
-✅ Startup complete!
+Application starting...
+Hello! What's your name? Claude
+
+Good morning, Claude! 🌟
+
+It's currently 10:41 AM, and I'm delighted to meet you today.
+
+Welcome! I hope you're having a wonderful time.
+
+Application startup complete
 ```
 
 ## Creating a Project with Genesis

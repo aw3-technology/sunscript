@@ -1,6 +1,8 @@
 # SunScript Compiler
 
-The official compiler for SunScript - an AI-native programming language that lets you write code in natural language.
+The official compiler for SunScript - a natural language programming framework that uses AI (Claude 4) to transform human intentions into production-ready code.
+
+> **Philosophy**: Write what you want to achieve in plain English. Let Claude 4 handle the implementation details.
 
 ## Installation
 
@@ -15,11 +17,13 @@ cd sunscript
 npm install
 ```
 
-3. Set up your AI provider (OpenAI required):
+3. Set up your AI provider (Claude 4 recommended):
 ```bash
-cp .env.example .env
-# Edit .env and add your OpenAI API key
+# Create .env file in project root
+echo "ANTHROPIC_API_KEY=your-anthropic-api-key-here" > .env
 ```
+
+Get your API key from [Anthropic Console](https://console.anthropic.com/)
 
 4. Build the project:
 ```bash
@@ -37,39 +41,52 @@ npm link
 1. Create a `.sun` file:
 
 ```sunscript
-@context web application
+@context simple
 
 function greetUser {
-    ask the user for their name
-    display a personalized greeting with their name
-    add a friendly emoji to make it welcoming
+    ask user for their name
+    display friendly greeting message
+    include current time
+    make it welcoming and personal
+}
+
+function main {
+    call greetUser function
+    show application startup message
 }
 ```
 
 2. Compile it:
 
 ```bash
-# Using the run command (recommended)
-sunscript run genesis.sun
+# Using the run command (recommended for single files)
+sunscript run hello.sun
 
-# Using the biblical creation command
-sunscript let there be light
+# Using the biblical creation command (for Genesis projects)
+sunscript let there be light --genesis genesis.sun
 
-# Single file compilation
-sunscript compile examples/hello-world.sun
-
-# Legacy compilation (if needed)
-npx ts-node test-compile.ts examples/hello-world.sun
+# Single file compilation with specific target
+sunscript compile hello.sun --target javascript
 ```
 
 3. Run the generated code:
 
 ```bash
-# For JavaScript output
-node dist/hello-world.greet.js
+# SunScript generates separate function files in the dist folder
+# You'll find: dist/hello.greetUser.js and dist/hello.main.js
 
-# For HTML output
-open dist/hello-world.html
+# To run them together:
+cat > run-hello.js << 'EOF'
+const fs = require('fs');
+eval(fs.readFileSync('./dist/hello.greetUser.js', 'utf8'));
+eval(fs.readFileSync('./dist/hello.main.js', 'utf8'));
+// Mock browser functions for Node.js
+const prompt = require('prompt-sync')();
+const alert = (msg) => console.log('\n' + msg + '\n');
+main();
+EOF
+
+node run-hello.js
 ```
 
 ## Supported Target Languages
@@ -81,12 +98,13 @@ open dist/hello-world.html
 
 ## Features
 
-- **Natural Language Programming**: Write functions in plain English
-- **AI-Powered Code Generation**: Uses OpenAI GPT-4 to transform natural language into code
+- **Natural Language Programming**: Write your intentions in plain English - no strict syntax required
+- **Claude 4 Powered**: Uses Anthropic's Claude Sonnet 4 for superior code generation with deep understanding
+- **Production-Ready Code**: Generated code includes error handling, input validation, and best practices
+- **Natural Language First**: The lexer prioritizes natural language over strict keywords
 - **Multiple Target Languages**: Compile to JavaScript, TypeScript, Python, or HTML
-- **Syntax Validation**: Automatically validates and fixes generated code
-- **Smart Code Cleaning**: Removes markdown artifacts and ensures clean output
-- **HTML Generation**: Creates beautiful, responsive web pages from natural language
+- **Smart Validation**: Automatically validates generated code and retries with fixes if needed
+- **Template Literal Support**: Preserves modern JavaScript features like template strings
 - **Extensible Architecture**: Easy to add new AI providers and target languages
 
 ## Example SunScript Files
