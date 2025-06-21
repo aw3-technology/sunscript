@@ -50,6 +50,14 @@ export class CodeGenerator {
           
           console.log(`Validation result for ${funcNode.name}:`, validationResult.valid, validationResult.errors?.length || 0);
           
+          // Log detailed validation errors if any
+          if (!validationResult.valid && validationResult.errors.length > 0) {
+            console.log(`Validation errors for ${funcNode.name}:`);
+            validationResult.errors.forEach((error, index) => {
+              console.log(`  Error ${index + 1}: Line ${error.line || 'unknown'}: ${error.message}`);
+            });
+          }
+          
           if (validationResult.valid) {
             result.code[funcNode.name] = cleanedCode;
             

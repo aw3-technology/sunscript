@@ -9,6 +9,7 @@ export interface SanitizationOptions {
   normalizeNewlines?: boolean;
   trimWhitespace?: boolean;
   removeNullBytes?: boolean;
+  allowTemplateLiterals?: boolean;
 }
 
 export interface PathSanitizationOptions {
@@ -105,6 +106,11 @@ export class InputSanitizer {
 
     // Check for dangerous patterns
     for (const pattern of this.DANGEROUS_PATTERNS) {
+      // Skip template literal pattern if allowTemplateLiterals is true
+      if (opts.allowTemplateLiterals && pattern.source === '`[^`]*`') {
+        continue;
+      }
+      
       if (pattern.test(sanitized)) {
         globalLogger.warn('Dangerous pattern detected in input', {
           type: 'input-sanitization',

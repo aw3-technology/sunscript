@@ -5,7 +5,7 @@ import { CodeGenerator } from '../generator/CodeGenerator';
 import { CompilerConfig, CompilationResult, AIContext } from '../types';
 import { ErrorHandler, globalErrorHandler, createFileNotFoundError, createParseError } from '../errors/ErrorHandler';
 import { SunScriptError, ErrorCode, CompilationError, FileSystemError } from '../errors/SunScriptError';
-import { sunScriptFileOps, outputFileOps } from '../security';
+import { sunScriptFileOps, generatedCodeFileOps } from '../security';
 import { ConfigValidator, InputValidator } from '../validation';
 import { ErrorFormatter } from '../parser/ErrorFormatter';
 import * as path from 'path';
@@ -190,12 +190,13 @@ export class SunScriptCompiler extends EventEmitter {
           outputPath = path.join(outputDir, `${baseName}.${name}.${ext}`);
         }
         
-        // Use secure file operations for writing output
-        await outputFileOps.writeFile(outputPath, code, {
+        // Use secure file operations for writing generated code output
+        await generatedCodeFileOps.writeFile(outputPath, code, {
           createDirectories: true,
           validatePath: true,
           atomic: true,
-          mode: 0o644
+          mode: 0o644,
+          allowTemplateLiterals: true // Allow template literals in generated code
         });
         console.log(`Generated: ${outputPath}`);
       }

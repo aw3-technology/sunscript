@@ -12,6 +12,7 @@ export {
   secureFileOps,
   sunScriptFileOps,
   outputFileOps,
+  generatedCodeFileOps,
   configFileOps
 } from './SecureFileOperations';
 

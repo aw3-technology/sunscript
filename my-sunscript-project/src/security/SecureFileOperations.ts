@@ -20,6 +20,7 @@ export interface SecureWriteOptions {
   validatePath?: boolean;
   backup?: boolean;
   atomic?: boolean;
+  allowTemplateLiterals?: boolean; // Allow template literals in content
 }
 
 export interface SecureCopyOptions {
@@ -173,7 +174,8 @@ export class SecureFileOperations {
       const sanitizedContent = InputSanitizer.sanitizeText(content, {
         maxLength: 100 * 1024 * 1024, // 100MB max for write operations
         allowUnicode: true,
-        allowControlChars: true // Allow control chars in file content
+        allowControlChars: true, // Allow control chars in file content
+        allowTemplateLiterals: opts.allowTemplateLiterals || false
       });
 
       // Create parent directories if requested
@@ -449,6 +451,13 @@ export class SecureFileOperations {
     );
   }
 
+  static createForGeneratedCode(): SecureFileOperations {
+    return new SecureFileOperations(
+      FileSecurityValidator.createForOutputFiles(),
+      FilePermissionManager.createPermissiveManager()
+    );
+  }
+
   static createForConfigFiles(): SecureFileOperations {
     return new SecureFileOperations(
       FileSecurityValidator.createForConfigFiles(),
@@ -461,4 +470,5 @@ export class SecureFileOperations {
 export const secureFileOps = new SecureFileOperations();
 export const sunScriptFileOps = SecureFileOperations.createForSunScriptFiles();
 export const outputFileOps = SecureFileOperations.createForOutputFiles();
+export const generatedCodeFileOps = SecureFileOperations.createForGeneratedCode();
 export const configFileOps = SecureFileOperations.createForConfigFiles();
