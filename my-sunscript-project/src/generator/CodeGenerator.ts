@@ -48,6 +48,8 @@ export class CodeGenerator {
             `${funcNode.name}.${context.targetLanguage}`
           );
           
+          console.log(`Validation result for ${funcNode.name}:`, validationResult.valid, validationResult.errors?.length || 0);
+          
           if (validationResult.valid) {
             result.code[funcNode.name] = cleanedCode;
             
@@ -84,14 +86,60 @@ export class CodeGenerator {
                 severity: 'info'
               });
             } else {
-              // Still has errors - include the code but warn
-              result.code[funcNode.name] = retryCleaned;
-              result.metadata.warnings.push({
-                message: `Generated code for ${funcNode.name} has syntax errors: ${
-                  retryValidation.errors.map(e => e.message).join(', ')
-                }`,
-                severity: 'error'
-              });
+              // Still has errors - try one more time with a more specific prompt
+              console.log(`Retry also failed, attempting final fix...`);
+              
+              const finalFixPrompt = `Generate a complete, syntactically correct ${context.targetLanguage} function named "${funcNode.name}".
+
+Requirements:
+${funcNode.body.filter((expr: any) => expr.type === 'NaturalLanguageExpression').map((expr: any) => `- ${expr.text}`).join('\n')}
+
+CRITICAL: The code must be:
+1. Complete with no missing parts
+2. Syntactically correct ${context.targetLanguage}
+3. Include all necessary closing brackets, parentheses, and semicolons
+4. Handle all variables and expressions properly
+5. Include proper error handling
+
+Previous errors to fix:
+${retryValidation.errors.map(e => `- Line ${e.line}: ${e.message}`).join('\n')}
+
+Return ONLY the complete function code with no explanations.`;
+
+              try {
+                const finalResponse = await this.aiProvider.generateCode(finalFixPrompt, context);
+                const finalCleaned = this.cleanGeneratedCode(finalResponse.code);
+                
+                const finalValidation = await validator.validate(
+                  finalCleaned,
+                  `${funcNode.name}.${context.targetLanguage}`
+                );
+                
+                if (finalValidation.valid) {
+                  result.code[funcNode.name] = finalCleaned;
+                  result.metadata.warnings.push({
+                    message: `Code for ${funcNode.name} required multiple regeneration attempts but was successfully fixed`,
+                    severity: 'info'
+                  });
+                } else {
+                  // Still has errors after 3 attempts - generate fallback code
+                  console.log(`All attempts failed, generating fallback code...`);
+                  const fallbackCode = this.generateFallbackCode(funcNode, context);
+                  result.code[funcNode.name] = fallbackCode;
+                  result.metadata.warnings.push({
+                    message: `Generated code for ${funcNode.name} failed validation after multiple attempts. Using fallback implementation.`,
+                    severity: 'error'
+                  });
+                }
+              } catch (error: any) {
+                // Final attempt failed - use fallback
+                const fallbackCode = this.generateFallbackCode(funcNode, context);
+                result.code[funcNode.name] = fallbackCode;
+                result.metadata.warnings.push({
+                  message: `Failed to generate valid code for ${funcNode.name} after multiple attempts: ${error.message}. Using fallback implementation.`,
+                  severity: 'error'
+                });
+              }
             }
           }
         } catch (error: any) {
@@ -176,34 +224,51 @@ Output only the complete HTML code, starting with <!DOCTYPE html>.`;
   }
 
   private cleanGeneratedCode(code: string): string {
+    // Remove common AI response prefixes and suffixes
+    let cleanedCode = code
+      .replace(/^Here's.*?:?\s*/i, '') // Remove "Here's the code:" etc.
+      .replace(/^I'll.*?:?\s*/i, '')   // Remove "I'll create..." etc.
+      .replace(/^Let me.*?:?\s*/i, '') // Remove "Let me..." etc.
+      .replace(/^This.*?:?\s*/i, '')   // Remove "This code..." etc.
+      .trim();
+
     // First, try to extract code from markdown code blocks
     const codeBlockRegex = /```(?:html|javascript|typescript|python|js|ts|py)?\n([\s\S]*?)```/g;
-    const matches = code.match(codeBlockRegex);
+    const matches = cleanedCode.match(codeBlockRegex);
     
     if (matches) {
       // Extract code from the first code block
-      const cleanedCode = matches[0]
+      const extractedCode = matches[0]
         .replace(/```(?:html|javascript|typescript|python|js|ts|py)?\n/, '')
         .replace(/```$/, '')
         .trim();
-      return cleanedCode;
+      return extractedCode;
     }
     
     // If no code blocks found, look for HTML tags
     // This handles cases where the AI returns HTML without code blocks
-    const htmlMatch = code.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+    const htmlMatch = cleanedCode.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
     if (htmlMatch) {
       return htmlMatch[0].trim();
     }
     
+    // Look for function declarations
+    const functionMatch = cleanedCode.match(/(?:function\s+\w+|\w+\s*=\s*function|\w+\s*=\s*\([^)]*\)\s*=>|def\s+\w+)[\s\S]*$/);
+    if (functionMatch) {
+      return functionMatch[0].trim();
+    }
+    
     // If still no match, try to find content between first < and last >
-    const tagMatch = code.match(/<[\s\S]*>/);
+    const tagMatch = cleanedCode.match(/<[\s\S]*>/);
     if (tagMatch) {
       return tagMatch[0].trim();
     }
     
+    // Remove trailing explanations or comments that might be outside the code
+    cleanedCode = cleanedCode.split('\n\n')[0]; // Take only the first paragraph
+    
     // If no patterns found, return as is
-    return code.trim();
+    return cleanedCode.trim();
   }
 
   private buildFunctionPrompt(node: any, context: AIContext): string {
@@ -225,5 +290,69 @@ Output only the complete HTML code, starting with <!DOCTYPE html>.`;
     prompt += '\nGenerate only the function code, no explanations or markdown formatting. Ensure the code is syntactically correct.';
     
     return prompt;
+  }
+
+  private generateFallbackCode(node: any, context: AIContext): string {
+    const functionName = node.name;
+    const requirements = node.body
+      .filter((expr: any) => expr.type === 'NaturalLanguageExpression')
+      .map((expr: any) => expr.text);
+
+    // Generate basic fallback code based on target language
+    switch (context.targetLanguage) {
+      case 'javascript':
+        return `function ${functionName}() {
+  // TODO: Implement function requirements:
+  ${requirements.map(req => `// - ${req}`).join('\n  ')}
+  
+  try {
+    console.log('${functionName} function called');
+    // Add your implementation here
+    return null;
+  } catch (error) {
+    console.error('Error in ${functionName}:', error);
+    throw error;
+  }
+}`;
+
+      case 'typescript':
+        return `function ${functionName}(): any {
+  // TODO: Implement function requirements:
+  ${requirements.map(req => `// - ${req}`).join('\n  ')}
+  
+  try {
+    console.log('${functionName} function called');
+    // Add your implementation here
+    return null;
+  } catch (error) {
+    console.error('Error in ${functionName}:', error);
+    throw error;
+  }
+}`;
+
+      case 'python':
+        return `def ${functionName}():
+    """
+    TODO: Implement function requirements:
+    ${requirements.map(req => `- ${req}`).join('\n    ')}
+    """
+    
+    try:
+        print(f'${functionName} function called')
+        # Add your implementation here
+        return None
+    except Exception as error:
+        print(f'Error in ${functionName}: {error}')
+        raise`;
+
+      default:
+        return `// Fallback implementation for ${functionName}
+// Requirements:
+${requirements.map(req => `// - ${req}`).join('\n')}
+
+function ${functionName}() {
+  console.log('${functionName} - implementation needed');
+}`;
+    }
   }
 }

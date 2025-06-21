@@ -220,13 +220,35 @@ export class AnthropicProvider extends AIProvider {
 
   private cleanGeneratedCode(code: string): string {
     // Remove common AI response artifacts
-    return code
+    let cleanedCode = code
       .replace(/```[\w]*\n?/g, '') // Remove code block markers
       .replace(/^Here's.*?:\s*/i, '') // Remove "Here's the code:" prefixes
       .replace(/^I'll.*?:\s*/i, '') // Remove "I'll create..." prefixes
       .replace(/^Let me.*?:\s*/i, '') // Remove "Let me..." prefixes
+      .replace(/^This.*?:\s*/i, '') // Remove "This code..." prefixes
       .replace(/\n\s*\n\s*\n/g, '\n\n') // Normalize line breaks
       .trim();
+
+    // Remove trailing explanations that might appear after the code
+    const lines = cleanedCode.split('\n');
+    let codeEndIndex = lines.length;
+    
+    // Look for common ending patterns that indicate explanations
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim().toLowerCase();
+      if (line.startsWith('this code') || 
+          line.startsWith('the function') ||
+          line.startsWith('note that') ||
+          line.startsWith('explanation:') ||
+          line.includes('explanation') ||
+          line.includes('implements')) {
+        codeEndIndex = i;
+        break;
+      }
+    }
+    
+    // Return only the code part
+    return lines.slice(0, codeEndIndex).join('\n').trim();
   }
 
   private isNonRetryableError(error: any): boolean {
