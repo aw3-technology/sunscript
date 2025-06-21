@@ -204,7 +204,7 @@ export class CLI {
       targetLanguage: 'javascript',
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-4-20241201'
+        model: 'claude-sonnet-4-20250514'
       })
     });
 
@@ -268,7 +268,7 @@ export class CLI {
       targetLanguage: 'javascript', // Will be overridden by genesis file
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-4-20241201'
+        model: 'claude-sonnet-4-20250514'
       })
     });
 
