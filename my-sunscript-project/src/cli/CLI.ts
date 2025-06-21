@@ -199,12 +199,15 @@ export class CLI {
     console.log(chalk.blue(`🚀 Compiling ${filePath}...`));
 
     const { SunScriptCompiler } = await import('../compiler/Compiler');
-    const { MockProvider } = await import('../ai/providers/MockProvider');
+    const { AnthropicProvider } = await import('../ai/providers/AnthropicProvider');
     
     const compiler = new SunScriptCompiler({
       outputDir: './dist',
       targetLanguage: 'javascript',
-      aiProvider: new MockProvider()
+      aiProvider: new AnthropicProvider({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: 'claude-3-sonnet-20240229'
+      })
     });
 
     try {
