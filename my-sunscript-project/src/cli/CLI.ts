@@ -259,7 +259,8 @@ export class CLI {
       targetLanguage: targetLanguage,
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-sonnet-4-20250514'
+        model: 'claude-sonnet-4-20250514',
+        timeout: 60000 // 60 seconds for complex generations
       })
     });
 
@@ -326,7 +327,8 @@ export class CLI {
       targetLanguage: 'javascript', // Will be overridden by genesis file
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-sonnet-4-20250514'
+        model: 'claude-sonnet-4-20250514',
+        timeout: 60000 // 60 seconds for complex generations
       })
     });
 
