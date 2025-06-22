@@ -1,0 +1,47 @@
+@project ECommerceApp
+@version 1.0.0
+@author "SunScript Developer"
+@description "A modern e-commerce platform"
+
+@sourceDir "src"
+@outputDir "."
+
+// Build configuration  
+@build {
+  targets: ["development", "production"],
+  options: {
+    minify: true
+  }
+}
+
+// Dependencies
+@dependencies {
+  external: {
+    "react": "^18.2.0",
+    "express": "^4.18.0"
+  }
+}
+
+component ProductCatalog {
+  Create a product catalog component for displaying products.
+  Include search, filtering, and pagination features.
+  Use React with TypeScript for the implementation.
+}
+
+component ShoppingCart {
+  Build a shopping cart component for managing cart items.
+  Include add/remove functionality and total calculations.
+  Use React Context for state management.
+}
+
+api ProductAPI {
+  Create a REST API for product management.
+  Include CRUD operations for products.
+  Use Express.js with TypeScript.
+}
+
+function EmailService {
+  Create an email service for sending notifications.
+  Support welcome emails and order confirmations.
+  Use Nodemailer for implementation.
+}

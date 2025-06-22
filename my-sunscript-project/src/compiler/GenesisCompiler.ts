@@ -5,6 +5,7 @@ import { SunScriptCompiler } from './Compiler';
 import { IncrementalCompiler, IncrementalCompilationOptions } from '../incremental/IncrementalCompiler';
 import { CompilerConfig, CompilationResult, AIContext } from '../types';
 import { GenesisProgram } from '../types/ast';
+import { ProjectStructureGenerator, ProjectGenerationResult } from '../generator/ProjectStructureGenerator';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
@@ -19,6 +20,10 @@ export interface GenesisCompilationResult {
   files: Map<string, CompilationResult>;
   entrypoints: Map<string, string>;
   buildConfig: any;
+  projectStructure?: {
+    foldersCreated: string[];
+    filesGenerated: string[];
+  };
   incremental?: {
     enabled: boolean;
     changesSummary: string;
@@ -30,6 +35,7 @@ export interface GenesisCompilationResult {
 export class GenesisCompiler extends EventEmitter {
   private baseCompiler: SunScriptCompiler;
   private incrementalCompiler?: IncrementalCompiler;
+  private projectStructureGenerator: ProjectStructureGenerator;
   private projectRoot: string;
   private sourceRoot: string;
   private outputRoot: string;
@@ -37,6 +43,7 @@ export class GenesisCompiler extends EventEmitter {
   constructor(private config: CompilerConfig) {
     super();
     this.baseCompiler = new SunScriptCompiler(config);
+    this.projectStructureGenerator = new ProjectStructureGenerator(config.aiProvider, config);
     this.projectRoot = process.cwd();
     this.sourceRoot = this.projectRoot;
     this.outputRoot = path.join(this.projectRoot, 'dist');
@@ -124,8 +131,30 @@ export class GenesisCompiler extends EventEmitter {
           }
         }
       } else {
-        // Fallback to traditional compilation
-        await this.compileImports(genesis, result);
+        // Use new project structure generation
+        const projectResult = await this.projectStructureGenerator.generateProject(
+          genesis, 
+          this.outputRoot
+        );
+        
+        // Convert project result to genesis result format
+        result.projectStructure = {
+          foldersCreated: projectResult.foldersCreated,
+          filesGenerated: projectResult.filesGenerated
+        };
+        
+        // Map generated files to the expected format
+        for (const [filePath, code] of Object.entries(projectResult.code)) {
+          result.files.set(filePath, {
+            code: { [path.basename(filePath, path.extname(filePath))]: code },
+            metadata: projectResult.metadata
+          });
+        }
+        
+        if (options.verbose) {
+          console.log(chalk.green(`📁 Created ${projectResult.foldersCreated.length} folders`));
+          console.log(chalk.green(`📄 Generated ${projectResult.filesGenerated.length} files`));
+        }
       }
       
       // Process entrypoints

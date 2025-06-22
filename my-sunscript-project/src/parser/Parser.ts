@@ -165,6 +165,14 @@ export class Parser {
       return this.functionDeclaration();
     }
     
+    if (this.match(TokenType.COMPONENT)) {
+      return this.componentDeclaration();
+    }
+    
+    if (this.match(TokenType.API)) {
+      return this.apiDeclaration();
+    }
+    
     if (this.match(TokenType.AI_DIRECTIVE)) {
       return this.aiDirective();
     }
@@ -396,5 +404,165 @@ export class Parser {
     while (this.match(TokenType.NEWLINE)) {
       // Skip
     }
+  }
+
+  private naturalLanguageExpression(): any | null {
+    const expressions: string[] = [];
+    
+    while (!this.isAtEnd() && 
+           !this.check(TokenType.AI_DIRECTIVE) && 
+           !this.check(TokenType.CLOSE_BRACE) &&
+           !this.check(TokenType.NEWLINE)) {
+      
+      const token = this.advance();
+      if (token.type === TokenType.TEXT || 
+          token.type === TokenType.IDENTIFIER) {
+        expressions.push(token.value);
+      }
+    }
+    
+    if (expressions.length > 0) {
+      return {
+        type: 'NaturalLanguageExpression',
+        text: expressions.join(' ')
+      };
+    }
+    
+    return null;
+  }
+
+  private addError(message: string): void {
+    const token = this.peek();
+    const error = this.errorRecovery.addError(
+      message,
+      token,
+      [],
+      this.currentContext
+    );
+    this.parseErrors.push(error);
+  }
+
+  private componentDeclaration(): ASTNode {
+    this.updateContext('component');
+    
+    let name = 'unknown';
+    const body: any[] = [];
+    const metadata: any = {
+      description: '',
+      props: [],
+      aiQuestions: [],
+      directives: [],
+      hasErrors: false
+    };
+    
+    try {
+      const nameToken = this.consumeWithRecovery(TokenType.IDENTIFIER, "Expected component name");
+      if (nameToken) {
+        name = nameToken.value;
+      }
+      
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after component name");
+      this.skipNewlines();
+      
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        if (this.match(TokenType.AI_DIRECTIVE)) {
+          const directive = this.aiDirective();
+          metadata.directives.push(directive);
+          this.skipNewlines();
+          continue;
+        }
+        
+        if (this.match(TokenType.NEWLINE)) {
+          continue;
+        }
+        
+        // Parse natural language expressions
+        const expr = this.naturalLanguageExpression();
+        if (expr) {
+          body.push({
+            type: 'ExpressionStatement',
+            expression: expr
+          });
+        }
+        
+        this.skipNewlines();
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after component body");
+      
+    } catch (error) {
+      metadata.hasErrors = true;
+      this.addError(`Error parsing component '${name}': ${(error as Error).message}`);
+    }
+    
+    return {
+      type: 'ComponentDeclaration',
+      name,
+      body,
+      metadata
+    } as any;
+  }
+
+  private apiDeclaration(): ASTNode {
+    this.updateContext('api');
+    
+    let name = 'unknown';
+    const endpoints: any[] = [];
+    const metadata: any = {
+      description: '',
+      version: '1.0.0',
+      aiQuestions: [],
+      directives: [],
+      hasErrors: false
+    };
+    
+    try {
+      const nameToken = this.consumeWithRecovery(TokenType.IDENTIFIER, "Expected API name");
+      if (nameToken) {
+        name = nameToken.value;
+      }
+      
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after API name");
+      this.skipNewlines();
+      
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        if (this.match(TokenType.AI_DIRECTIVE)) {
+          const directive = this.aiDirective();
+          metadata.directives.push(directive);
+          this.skipNewlines();
+          continue;
+        }
+        
+        if (this.match(TokenType.NEWLINE)) {
+          continue;
+        }
+        
+        // Parse endpoint definitions or natural language
+        const expr = this.naturalLanguageExpression();
+        if (expr) {
+          // For simplicity, treat all expressions as endpoint descriptions
+          endpoints.push({
+            method: 'POST', // Default method
+            path: `/${name.toLowerCase()}`,
+            description: (expr as any).text
+          });
+        }
+        
+        this.skipNewlines();
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after API body");
+      
+    } catch (error) {
+      metadata.hasErrors = true;
+      this.addError(`Error parsing API '${name}': ${(error as Error).message}`);
+    }
+    
+    return {
+      type: 'APIDeclaration',
+      name,
+      endpoints,
+      metadata
+    } as any;
   }
 }

@@ -1,0 +1,28 @@
+@targets typescript
+@syntax standard
+
+component ProductCatalog {
+  Create a comprehensive product catalog component for an e-commerce platform.
+  
+  Features required:
+  - Product grid with responsive layout
+  - Search and filtering capabilities (category, price range, ratings)
+  - Sorting options (price, popularity, ratings, newest)
+  - Pagination with infinite scroll option
+  - Product quick view modal
+  - Add to cart functionality
+  - Wishlist integration
+  - Product comparison feature
+  - Category navigation breadcrumbs
+  - Filter persistence in URL
+  
+  Technical requirements:
+  - Use React with TypeScript
+  - Implement with React hooks (useState, useEffect, useCallback, useMemo)
+  - Responsive design with CSS Grid and Flexbox
+  - Optimize for performance with virtual scrolling for large catalogs
+  - Include loading states and error handling
+  - Implement proper accessibility (ARIA labels, keyboard navigation)
+  - Add comprehensive unit tests
+  - Use React Query for data fetching and caching
+}

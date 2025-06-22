@@ -1,0 +1,149 @@
+@project ECommerceApp
+@version 1.0.0
+@author "SunScript Developer"
+@description "A modern e-commerce platform with React frontend and Node.js backend"
+
+@sourceDir "src"
+@outputDir "dist"
+
+// Import component definitions
+@import "./components/ProductCatalog.sun" as ProductCatalog
+@import "./components/ShoppingCart.sun" as ShoppingCart
+@import "./components/UserAuth.sun" as UserAuth
+@import "./components/PaymentProcessor.sun" as PaymentProcessor
+@import "./components/OrderManagement.sun" as OrderManagement
+@import "./components/AdminDashboard.sun" as AdminDashboard
+
+// Import API definitions
+@import "./api/ProductAPI.sun" as ProductAPI
+@import "./api/UserAPI.sun" as UserAPI
+@import "./api/PaymentAPI.sun" as PaymentAPI
+@import "./api/OrderAPI.sun" as OrderAPI
+
+// Import services
+@import "./services/EmailService.sun" as EmailService
+@import "./services/NotificationService.sun" as NotificationService
+@import "./services/AnalyticsService.sun" as AnalyticsService
+
+// Configuration
+@config {
+  database: {
+    type: "postgresql",
+    host: "localhost",
+    port: 5432
+  },
+  redis: {
+    host: "localhost", 
+    port: 6379
+  },
+  s3: {
+    bucket: "ecommerce-assets",
+    region: "us-west-2"
+  }
+}
+
+// Entrypoints
+@entrypoint frontend {
+  target: "src/App.tsx"
+  description: "React frontend application entry point"
+}
+
+@entrypoint backend {
+  target: "src/server.ts" 
+  description: "Express.js backend server entry point"
+}
+
+@entrypoint worker {
+  target: "src/worker.ts"
+  description: "Background job processor for order processing"
+}
+
+// Build configuration
+@build {
+  targets: ["development", "staging", "production"]
+  languages: ["typescript"]
+  bundler: "vite"
+  testing: "jest"
+  linting: "eslint"
+  formatting: "prettier"
+  
+  options: {
+    minify: true,
+    sourceMaps: true,
+    cssModules: true,
+    hotReload: true
+  }
+}
+
+// Dependencies
+@dependencies {
+  external: {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0", 
+    "react-router-dom": "^6.8.0",
+    "express": "^4.18.0",
+    "typeorm": "^0.3.0",
+    "redis": "^4.6.0",
+    "stripe": "^11.0.0",
+    "aws-sdk": "^2.1300.0",
+    "nodemailer": "^6.9.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "joi": "^17.8.0"
+  },
+  
+  aiModels: {
+    "text-generation": "claude-3-sonnet",
+    "code-analysis": "claude-3-haiku",
+    "documentation": "claude-3-opus"
+  }
+}
+
+// Deployment configuration
+@deployment {
+  staging: {
+    url: "https://staging.ecommerce-app.com",
+    branch: "develop",
+    ssl: true,
+    cdn: true,
+    environment: "staging"
+  },
+  
+  production: {
+    url: "https://ecommerce-app.com", 
+    branch: "main",
+    ssl: true,
+    cdn: true,
+    environment: "production",
+    scaling: {
+      minInstances: 2,
+      maxInstances: 10,
+      targetCPU: 70
+    }
+  }
+}
+
+// Global AI directives
+@aiDirective codeStyle {
+  preference: "functional-programming"
+  patterns: ["hooks", "composition", "immutability"]
+  testing: "comprehensive-unit-tests"
+  documentation: "jsdoc-with-examples"
+}
+
+@aiDirective security {
+  level: "high"
+  authentication: "jwt-with-refresh-tokens"
+  authorization: "role-based-access-control"
+  dataValidation: "joi-schemas"
+  sqlInjection: "parameterized-queries"
+  xss: "content-security-policy"
+}
+
+@aiDirective performance {
+  optimization: "aggressive"
+  caching: ["redis", "browser", "cdn"]
+  bundling: "code-splitting"
+  images: "webp-with-fallback"
+  database: "query-optimization"
+}

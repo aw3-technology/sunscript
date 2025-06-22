@@ -1,0 +1,44 @@
+@targets typescript  
+@syntax standard
+
+api ProductAPI {
+  Create a comprehensive REST API for product management in an e-commerce platform.
+  
+  Endpoints required:
+  
+  GET /api/products - Get paginated list of products with filtering and sorting
+  Parameters: page, limit, category, minPrice, maxPrice, search, sortBy, sortOrder
+  
+  GET /api/products/:id - Get single product with full details including reviews
+  
+  POST /api/products - Create new product (admin only)
+  Body: name, description, price, category, images, inventory, specifications
+  
+  PUT /api/products/:id - Update product (admin only)
+  Body: partial product data
+  
+  DELETE /api/products/:id - Delete product (admin only)
+  
+  GET /api/products/:id/reviews - Get product reviews with pagination
+  
+  POST /api/products/:id/reviews - Add product review (authenticated users)
+  Body: rating, comment, title
+  
+  GET /api/categories - Get product categories hierarchy
+  
+  GET /api/products/search - Advanced product search with filters
+  
+  Technical requirements:
+  - Use Express.js with TypeScript
+  - Implement proper authentication and authorization middleware
+  - Use Joi for request validation
+  - Implement rate limiting per endpoint
+  - Add comprehensive error handling with proper HTTP status codes
+  - Include API documentation with OpenAPI/Swagger
+  - Use TypeORM for database operations with PostgreSQL
+  - Implement caching with Redis for frequently accessed data
+  - Add logging with structured format
+  - Include comprehensive unit and integration tests
+  - Implement database connection pooling
+  - Add request/response compression
+}

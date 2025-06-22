@@ -1,0 +1,38 @@
+@targets typescript
+@syntax standard
+
+function EmailService {
+  Create a comprehensive email service for an e-commerce platform.
+  
+  Functionality required:
+  - Send welcome emails to new users with email verification
+  - Send order confirmation emails with detailed order information
+  - Send shipping notifications with tracking information  
+  - Send password reset emails with secure tokens
+  - Send promotional emails and newsletters with unsubscribe links
+  - Send abandoned cart reminder emails
+  - Send product back-in-stock notifications
+  - Send review request emails after delivery
+  
+  Template management:
+  - Create responsive HTML email templates
+  - Support for dynamic content and personalization
+  - Template versioning and A/B testing capability
+  - Multi-language template support
+  - Brand-consistent styling
+  
+  Technical requirements:
+  - Use Nodemailer with SMTP configuration
+  - Implement email queue system with Bull/Redis for high volume
+  - Add retry logic for failed email delivery
+  - Implement email tracking (opens, clicks) 
+  - Support for both HTML and plain text versions
+  - Add email validation and sanitization
+  - Implement rate limiting to prevent spam
+  - Add comprehensive logging for email delivery status
+  - Include bounce and complaint handling
+  - Support for email attachments (receipts, invoices)
+  - Implement email preferences management
+  - Add comprehensive unit tests with email mocking
+  - Use environment-based configuration for different email providers
+}

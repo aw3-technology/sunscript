@@ -1,0 +1,33 @@
+@targets typescript
+@syntax standard
+
+component UserDashboard {
+  Create a user dashboard component that displays user statistics and recent activities.
+  Include charts for data visualization and a responsive layout.
+  Implement real-time updates using WebSockets.
+}
+
+component UserProfile {
+  Build a user profile management component.
+  Allow users to edit their personal information, upload profile pictures, and manage privacy settings.
+  Include form validation and error handling.
+}
+
+api UserAPI {
+  Create a REST API for user management.
+  Include endpoints for user registration, authentication, profile updates, and data retrieval.
+  Implement JWT authentication and rate limiting.
+  Add comprehensive error handling and logging.
+}
+
+api AnalyticsAPI {
+  Build an analytics API that tracks user behavior and generates reports.
+  Include endpoints for event tracking, report generation, and dashboard metrics.
+  Implement data aggregation and caching for performance.
+}
+
+function NotificationService {
+  Create a notification service that handles real-time notifications.
+  Support email, SMS, and push notifications.
+  Include notification preferences and delivery status tracking.
+}

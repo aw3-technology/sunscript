@@ -2,14 +2,23 @@ import { AIProvider } from '../ai/AIProvider';
 import { Program, CompilationResult, AIContext } from '../types';
 import { ValidatorFactory } from '../validator/ValidatorFactory';
 import { Validator, ValidationResult } from '../validator/Validator';
+import { MultiPromptGenerator } from './MultiPromptGenerator';
 
 export class CodeGenerator {
+  private multiPromptGenerator: MultiPromptGenerator;
+
   constructor(
     private aiProvider: AIProvider,
     private config: any = {}
-  ) {}
+  ) {
+    this.multiPromptGenerator = new MultiPromptGenerator(aiProvider, config);
+  }
 
   async generate(ast: Program, context: AIContext): Promise<CompilationResult> {
+    // Check if this requires multi-prompt generation
+    if (this.shouldUseMultiPrompt(ast, context)) {
+      return await this.multiPromptGenerator.generate(ast, context);
+    }
     const result: CompilationResult = {
       code: {},
       metadata: {
@@ -408,5 +417,55 @@ function ${functionName}() {
   console.log('${functionName} - implementation needed');
 }`;
     }
+  }
+
+  /**
+   * Determine if the AST requires multi-prompt generation
+   * Based on complexity, component count, and target language
+   */
+  private shouldUseMultiPrompt(ast: Program, context: AIContext): boolean {
+    const componentCount = this.countComplexComponents(ast);
+    const hasComponents = ast.body.some(node => 
+      node.type === 'ComponentDeclaration' || 
+      node.type === 'APIDeclaration'
+    );
+    const isComplexLanguage = ['typescript', 'javascript', 'python'].includes(context.targetLanguage);
+    const hasMultipleFiles = componentCount > 2;
+    const isLargeApp = this.estimateCodeComplexity(ast) > 1000; // Rough estimation
+
+    // Use multi-prompt for:
+    // 1. Multiple components/APIs
+    // 2. Complex applications (estimated > 1000 lines)
+    // 3. Non-HTML languages with multiple functions
+    return (hasComponents && componentCount > 1) || 
+           (isComplexLanguage && hasMultipleFiles) || 
+           isLargeApp;
+  }
+
+  private countComplexComponents(ast: Program): number {
+    return ast.body.filter(node => 
+      node.type === 'ComponentDeclaration' || 
+      node.type === 'APIDeclaration' ||
+      node.type === 'FunctionDeclaration'
+    ).length;
+  }
+
+  private estimateCodeComplexity(ast: Program): number {
+    let complexity = 0;
+    
+    for (const node of ast.body) {
+      if (node.type === 'ComponentDeclaration' || 
+          node.type === 'APIDeclaration' || 
+          node.type === 'FunctionDeclaration') {
+        
+        const nodeWithBody = node as any;
+        if (nodeWithBody.body && Array.isArray(nodeWithBody.body)) {
+          // Estimate ~50 lines per natural language expression
+          complexity += nodeWithBody.body.length * 50;
+        }
+      }
+    }
+    
+    return complexity;
   }
 }
