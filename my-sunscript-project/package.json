@@ -36,6 +36,7 @@
     "glob": "^10.3.10",
     "htmlparser2": "^10.0.0",
     "ora": "^5.4.1",
+    "prompt-sync": "^4.2.0",
     "winston": "^3.11.0"
   },
   "devDependencies": {

@@ -102,19 +102,54 @@ export class CLI {
       .command('compile <input>')
       .description('Compile SunScript file')
       .option('-o, --output <dir>', 'Output directory', './dist')
-      .option('-t, --target <language>', 'Target language', 'javascript')
+      .option('-t, --target <language>', 'Target language')
       .action(async (input, options) => {
+        // Read the file to extract directives if target not specified
+        let targetLanguage: 'javascript' | 'typescript' | 'python' | 'html' = 'javascript';
+        
+        if (options.target) {
+          // Validate user-provided target
+          const lang = options.target.toLowerCase();
+          if (['javascript', 'typescript', 'python', 'html'].includes(lang)) {
+            targetLanguage = lang as 'javascript' | 'typescript' | 'python' | 'html';
+          } else {
+            console.error(`❌ Invalid target language: ${options.target}`);
+            console.error('Valid options: javascript, typescript, python, html');
+            process.exit(1);
+          }
+        } else {
+          // Extract from file directives
+          try {
+            const fileContent = await fs.readFile(input, 'utf-8');
+            const directiveRegex = /@targets\s+(\w+)/;
+            const match = fileContent.match(directiveRegex);
+            if (match) {
+              const lang = match[1].toLowerCase();
+              if (['javascript', 'typescript', 'python', 'html'].includes(lang)) {
+                targetLanguage = lang as 'javascript' | 'typescript' | 'python' | 'html';
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Failed to read file: ${input}`);
+            process.exit(1);
+          }
+        }
+        
         const { SunScriptCompiler } = await import('../compiler/Compiler');
-        const { OpenAIProvider } = await import('../ai/providers/OpenAIProvider');
+        const { AnthropicProvider } = await import('../ai/providers/AnthropicProvider');
         
         const compiler = new SunScriptCompiler({
           outputDir: options.output,
-          targetLanguage: options.target,
-          aiProvider: new OpenAIProvider()
+          targetLanguage: targetLanguage,
+          aiProvider: new AnthropicProvider({
+            apiKey: process.env.ANTHROPIC_API_KEY,
+            model: 'claude-sonnet-4-20250514'
+          })
         });
         
         try {
           console.log(`Compiling ${input}...`);
+          console.log(chalk.gray(`📋 Target language: ${targetLanguage}`));
           const result = await compiler.compileFile(input);
           console.log(`✅ Successfully compiled to ${options.output}`);
           
@@ -124,6 +159,9 @@ export class CLI {
               console.log(`  - ${w.message}`)
             );
           }
+          
+          // Exit cleanly after successful compilation
+          process.exit(0);
         } catch (error: any) {
           console.error(`❌ Compilation failed: ${error.message}`);
           process.exit(1);
@@ -196,12 +234,29 @@ export class CLI {
 
     console.log(chalk.blue(`🚀 Compiling ${filePath}...`));
 
+    // Read the file to extract directives
+    const fileContent = await fs.readFile(filePath, 'utf-8');
+    let targetLanguage: 'javascript' | 'typescript' | 'python' | 'html' = 'javascript'; // default
+    
+    // Parse directives from the file
+    const directiveRegex = /@targets\s+(\w+)/;
+    const match = fileContent.match(directiveRegex);
+    if (match) {
+      const lang = match[1].toLowerCase();
+      if (['javascript', 'typescript', 'python', 'html'].includes(lang)) {
+        targetLanguage = lang as 'javascript' | 'typescript' | 'python' | 'html';
+        console.log(chalk.gray(`📋 Target language: ${targetLanguage}`));
+      } else {
+        console.warn(chalk.yellow(`⚠️  Unknown target language: ${lang}, using javascript`));
+      }
+    }
+
     const { SunScriptCompiler } = await import('../compiler/Compiler');
     const { AnthropicProvider } = await import('../ai/providers/AnthropicProvider');
     
     const compiler = new SunScriptCompiler({
       outputDir: './dist',
-      targetLanguage: 'javascript',
+      targetLanguage: targetLanguage,
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
         model: 'claude-sonnet-4-20250514'
@@ -218,6 +273,9 @@ export class CLI {
           console.log(chalk.yellow(`  - ${w.message}${options.verbose ? ` (${w.severity})` : ''}`))
         );
       }
+      
+      // Exit cleanly after successful compilation
+      process.exit(0);
       
     } catch (error: any) {
       console.error(chalk.red(`❌ Compilation failed: ${error.message}`));
@@ -344,6 +402,9 @@ export class CLI {
         }
         
         console.log(chalk.gray(`   Output written to: ${result.buildConfig?.output || './dist'}\n`));
+        
+        // Exit cleanly after successful compilation
+        process.exit(0);
       }
       
     } catch (error: any) {
