@@ -1,0 +1,8 @@
+@syntax flex
+@targets javascript
+
+I want to create a simple calculator app that can do basic math operations like addition, subtraction, multiplication and division. 
+It should have a nice user interface with buttons for numbers 0-9 and the operation buttons.
+When the user clicks the buttons, it should show the current calculation on a display.
+There should also be a clear button to reset everything and an equals button to show the result.
+Make sure to handle division by zero errors gracefully.

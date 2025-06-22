@@ -27,16 +27,36 @@ export class Parser {
       body: [],
       metadata: {
         version: '1.0.0',
+        syntaxMode: 'standard',
         parseErrors: []
       }
     };
+
+    // First pass: Look for directives that affect parsing
+    this.preprocessDirectives(program);
+    
+    // Reset position for actual parsing
+    this.current = 0;
 
     while (!this.isAtEnd()) {
       if (this.match(TokenType.NEWLINE)) continue;
       
       try {
-        const declaration = this.declaration();
+        const declaration = program.metadata.syntaxMode === 'flex' 
+          ? this.flexDeclaration() 
+          : this.declaration();
+          
         if (declaration) {
+          // Handle directives that affect program metadata
+          if (declaration.type === 'AIDirective') {
+            const directive = declaration as any;
+            if (directive.directive === 'syntax' && directive.parameters?.value) {
+              const syntaxMode = directive.parameters.value.toLowerCase();
+              if (syntaxMode === 'flex') {
+                program.metadata.syntaxMode = 'flex';
+              }
+            }
+          }
           program.body.push(declaration);
         }
       } catch (error) {
@@ -60,6 +80,82 @@ export class Parser {
     // Add parse errors to program metadata
     program.metadata.parseErrors = this.getAllErrors();
     return program;
+  }
+
+  private preprocessDirectives(program: Program): void {
+    const savedPosition = this.current;
+    this.current = 0;
+    
+    while (!this.isAtEnd()) {
+      if (this.match(TokenType.AI_DIRECTIVE)) {
+        const directive = this.previous().value;
+        if (directive === 'syntax' && this.check(TokenType.TEXT)) {
+          const value = this.advance().value.toLowerCase();
+          if (value === 'flex') {
+            program.metadata.syntaxMode = 'flex';
+          }
+        }
+      } else {
+        this.advance();
+      }
+    }
+    
+    this.current = savedPosition;
+  }
+
+  private flexDeclaration(): ASTNode | null {
+    this.updateContext('flex-declaration');
+    
+    // In flex mode, only directives have special meaning
+    if (this.match(TokenType.AI_DIRECTIVE)) {
+      return this.aiDirective();
+    }
+    
+    // Everything else is treated as natural language
+    const expressions: any[] = [];
+    const startLine = this.peek().position?.line || 0;
+    
+    while (!this.isAtEnd() && !this.check(TokenType.AI_DIRECTIVE)) {
+      if (this.match(TokenType.NEWLINE)) {
+        // Check if we have accumulated any expressions
+        if (expressions.length > 0) {
+          break;
+        }
+        continue;
+      }
+      
+      const token = this.advance();
+      if (token.type === TokenType.TEXT || 
+          token.type === TokenType.IDENTIFIER ||
+          token.type === TokenType.FUNCTION ||
+          token.type === TokenType.COMPONENT ||
+          token.type === TokenType.API ||
+          token.type === TokenType.MODEL ||
+          token.type === TokenType.PIPELINE ||
+          token.type === TokenType.BEHAVIOR ||
+          token.type === TokenType.TEST) {
+        expressions.push(token.value);
+      }
+    }
+    
+    if (expressions.length > 0) {
+      // Create a natural language block
+      return {
+        type: 'FunctionDeclaration',
+        name: 'main',
+        body: [{
+          type: 'NaturalLanguageExpression',
+          text: expressions.join(' ')
+        }],
+        metadata: {
+          aiQuestions: [],
+          directives: [],
+          flexSyntax: true
+        }
+      } as any;
+    }
+    
+    return null;
   }
 
   private declaration(): ASTNode | null {

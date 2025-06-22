@@ -33,6 +33,7 @@ export interface Program extends ASTNode {
   metadata: {
     version: string;
     context?: string;
+    syntaxMode?: 'standard' | 'flex';
     parseErrors?: any[];
   };
 }

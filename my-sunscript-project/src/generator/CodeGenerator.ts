@@ -158,31 +158,59 @@ Return ONLY the complete function code with no explanations.`;
   private async generateHTMLPage(ast: Program, context: AIContext, validator: Validator): Promise<{ code: string; warnings: any[] }> {
     const warnings: any[] = [];
     
+    // Check if this is flex syntax
+    const hasFlexSyntax = ast.metadata.syntaxMode === 'flex' || 
+      ast.body.some((node: any) => node.metadata?.flexSyntax);
+    
     // Build a comprehensive prompt for HTML generation
-    let prompt = `Generate a complete HTML page that implements the following functionality. 
+    let prompt = '';
+    
+    if (hasFlexSyntax) {
+      prompt = `Generate a complete HTML web application based on this natural language description:
+
+`;
+      
+      // Extract all natural language content
+      for (const node of ast.body) {
+        if (node.type === 'FunctionDeclaration') {
+          const funcNode = node as any;
+          for (const expr of funcNode.body) {
+            if (expr.type === 'NaturalLanguageExpression') {
+              prompt += expr.text + '\n';
+            }
+          }
+        }
+      }
+      
+      prompt += `
+IMPORTANT: This is a free-form natural language specification. Interpret the intent and create a complete, working HTML application.
+`;
+    } else {
+      prompt = `Generate a complete HTML page that implements the following functionality. 
 IMPORTANT: Return ONLY the HTML code starting with <!DOCTYPE html> and ending with </html>. 
 Do not include any explanations, comments outside the code, or markdown formatting.
 
 Requirements:\n\n`;
-    
-    for (const node of ast.body) {
-      if (node.type === 'FunctionDeclaration') {
-        const funcNode = node as any;
-        prompt += `Function "${funcNode.name}":\n`;
-        
-        for (const expr of funcNode.body) {
-          if (expr.type === 'NaturalLanguageExpression') {
-            prompt += `- ${expr.text}\n`;
+      
+      for (const node of ast.body) {
+        if (node.type === 'FunctionDeclaration') {
+          const funcNode = node as any;
+          prompt += `Function "${funcNode.name}":\n`;
+          
+          for (const expr of funcNode.body) {
+            if (expr.type === 'NaturalLanguageExpression') {
+              prompt += `- ${expr.text}\n`;
+            }
           }
-        }
-        
-        if (funcNode.metadata.aiQuestions && funcNode.metadata.aiQuestions.length > 0) {
-          prompt += 'Additional considerations:\n';
-          for (const question of funcNode.metadata.aiQuestions) {
-            prompt += `- ${question}\n`;
+          
+          if (funcNode.metadata.aiQuestions && funcNode.metadata.aiQuestions.length > 0) {
+            prompt += 'Additional considerations:\n';
+            for (const question of funcNode.metadata.aiQuestions) {
+              prompt += `- ${question}\n`;
+            }
           }
+          prompt += '\n';
         }
-        prompt += '\n';
       }
     }
     
@@ -272,6 +300,24 @@ Output only the complete HTML code, starting with <!DOCTYPE html>.`;
   }
 
   private buildFunctionPrompt(node: any, context: AIContext): string {
+    // Check if this is flex syntax
+    if (node.metadata.flexSyntax) {
+      let prompt = `Generate a complete ${context.targetLanguage} program based on this natural language description:\n\n`;
+      
+      for (const expr of node.body) {
+        if (expr.type === 'NaturalLanguageExpression') {
+          prompt += expr.text + '\n';
+        }
+      }
+      
+      prompt += `\nIMPORTANT: This is a free-form natural language specification. Interpret the intent and create a complete, working ${context.targetLanguage} program. `;
+      prompt += 'Include any necessary functions, classes, or structures to fulfill the requirements. ';
+      prompt += 'Generate only the code, no explanations or markdown formatting.';
+      
+      return prompt;
+    }
+    
+    // Standard syntax
     let prompt = `Generate a ${context.targetLanguage} function named "${node.name}" that:\n\n`;
     
     for (const expr of node.body) {
