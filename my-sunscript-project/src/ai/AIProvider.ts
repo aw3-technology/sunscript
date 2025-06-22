@@ -22,9 +22,15 @@ export abstract class AIProvider {
   };
 
   protected buildSystemPrompt(context: AIContext): string {
+    const isHTML = context.targetLanguage === 'html';
+    const codeDescription = isHTML 
+      ? 'complete HTML web applications with embedded CSS and JavaScript'
+      : `production-ready ${context.targetLanguage} code`;
+    
     return `You are SunScript, an AI-native programming language compiler.
     
-Generate production-ready ${context.targetLanguage} code that follows best practices.
+Generate ${codeDescription} that follows best practices.
+${isHTML ? 'For HTML targets, always include functional JavaScript for interactivity and embedded CSS for styling.' : ''}
 Include comprehensive error handling, security measures, and performance optimizations.
 The code should be well-commented and maintainable.
 

@@ -196,7 +196,8 @@ export class SunScriptCompiler extends EventEmitter {
           validatePath: true,
           atomic: true,
           mode: 0o644,
-          allowTemplateLiterals: true // Allow template literals in generated code
+          allowTemplateLiterals: true, // Allow template literals in generated code
+          skipContentSanitization: this.config.targetLanguage === 'html' // Allow script tags for HTML files
         });
         console.log(`Generated: ${outputPath}`);
       }

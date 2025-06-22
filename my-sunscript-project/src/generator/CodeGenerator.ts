@@ -225,6 +225,14 @@ Create a modern, responsive HTML page that:
 7. Uses embedded <script> tags for JavaScript functionality
 8. Uses embedded <style> tags for CSS styling
 
+CRITICAL REQUIREMENTS:
+- Output MUST be a complete, working HTML document
+- Start with <!DOCTYPE html> and end with </html>
+- Include complete CSS in <style> tags
+- Include complete JavaScript in <script> tags with NO syntax errors
+- Ensure all functions, event handlers, and animations are fully implemented
+- Do NOT truncate any code - the output must be production-ready
+
 Output only the complete HTML code, starting with <!DOCTYPE html>.`;
 
     try {

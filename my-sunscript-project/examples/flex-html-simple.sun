@@ -1,0 +1,4 @@
+@syntax flex
+@targets html
+
+Create a simple calculator with buttons for numbers 0-9 and basic operations. Make it look modern with CSS and include JavaScript to make it work.

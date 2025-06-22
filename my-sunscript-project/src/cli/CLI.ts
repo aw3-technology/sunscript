@@ -260,7 +260,7 @@ export class CLI {
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
         model: 'claude-sonnet-4-20250514',
-        timeout: 60000 // 60 seconds for complex generations
+        timeout: 120000 // 120 seconds for complex HTML generations
       })
     });
 
@@ -328,7 +328,7 @@ export class CLI {
       aiProvider: new AnthropicProvider({
         apiKey: process.env.ANTHROPIC_API_KEY,
         model: 'claude-sonnet-4-20250514',
-        timeout: 60000 // 60 seconds for complex generations
+        timeout: 120000 // 120 seconds for complex HTML generations
       })
     });
 

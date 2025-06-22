@@ -141,7 +141,7 @@ export class AnthropicProvider extends AIProvider {
         // Create API call promise
         const apiCall = this.anthropic.messages.create({
           model: this.config.model,
-          max_tokens: Math.min(options?.maxTokens || 4000, 4000), // Claude max is 4000
+          max_tokens: Math.min(options?.maxTokens || 16384, 16384), // Increased for complex HTML generation with complete JS
           temperature: Math.max(0, Math.min(1, options?.temperature || 0.7)), // Clamp to 0-1
           system: this.buildSystemPrompt(context),
           messages: [

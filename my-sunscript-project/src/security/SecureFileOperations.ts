@@ -21,6 +21,7 @@ export interface SecureWriteOptions {
   backup?: boolean;
   atomic?: boolean;
   allowTemplateLiterals?: boolean; // Allow template literals in content
+  skipContentSanitization?: boolean; // Skip content sanitization for generated code
 }
 
 export interface SecureCopyOptions {
@@ -170,8 +171,8 @@ export class SecureFileOperations {
         }
       }
 
-      // Sanitize content
-      const sanitizedContent = InputSanitizer.sanitizeText(content, {
+      // Sanitize content (skip for generated HTML files)
+      const sanitizedContent = opts.skipContentSanitization ? content : InputSanitizer.sanitizeText(content, {
         maxLength: 100 * 1024 * 1024, // 100MB max for write operations
         allowUnicode: true,
         allowControlChars: true, // Allow control chars in file content

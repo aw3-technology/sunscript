@@ -1,9 +1,6 @@
 @syntax flex
 @targets html
 
-Create a beautiful landing page for a fictional AI startup called "MindFlow AI". 
-The page should have a modern, sleek design with a gradient background.
-Include a hero section with the company name and tagline "Empowering Intelligence, Amplifying Innovation".
-Add a features section showcasing three key features with icons and descriptions.
-Include a contact form at the bottom where visitors can enter their email to get updates.
-Make it fully responsive and add smooth scroll animations when sections come into view.
+Create a landing page for "MindFlow AI" with the tagline "Empowering Intelligence, Amplifying Innovation". 
+Include a hero section, three feature cards, and a simple email signup form.
+Use modern CSS with gradients and make it responsive.
