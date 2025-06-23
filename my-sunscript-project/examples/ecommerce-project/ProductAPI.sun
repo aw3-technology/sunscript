@@ -1,0 +1,8 @@
+@targets typescript
+
+function ProductAPI {
+  Create a REST API for product management.
+  Include CRUD operations for products, categories, and inventory.
+  Implement authentication middleware and request validation.
+  Use Express.js with TypeScript and PostgreSQL database.
+}

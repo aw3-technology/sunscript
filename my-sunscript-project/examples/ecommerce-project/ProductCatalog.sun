@@ -1,0 +1,8 @@
+@targets typescript
+
+function ProductCatalog {
+  Create a modern product catalog component for the e-commerce platform.
+  Include product grid, search functionality, filtering by category and price.
+  Add sorting options and pagination for better user experience.
+  Use React with TypeScript and responsive design.
+}

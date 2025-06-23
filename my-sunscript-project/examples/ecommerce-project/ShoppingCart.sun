@@ -1,0 +1,8 @@
+@targets typescript
+
+function ShoppingCart {
+  Build a shopping cart component that manages cart state.
+  Include add/remove items, quantity updates, and total calculations.
+  Implement cart persistence and checkout flow.
+  Use React Context for state management.
+}

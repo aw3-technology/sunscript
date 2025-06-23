@@ -1,0 +1,8 @@
+@targets typescript
+
+function EmailService {
+  Create an email service for sending notifications.
+  Include welcome emails, order confirmations, and password resets.
+  Implement email templates and queue processing.
+  Use Nodemailer with SMTP configuration.
+}

@@ -1,0 +1,8 @@
+@targets typescript
+
+function UserAuth {
+  Create user authentication components for login and registration.
+  Include form validation, password reset, and user profile management.
+  Implement JWT token handling and secure authentication flow.
+  Use React Hook Form for form management.
+}
