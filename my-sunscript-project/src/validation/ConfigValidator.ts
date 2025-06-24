@@ -18,12 +18,80 @@ export class ConfigValidator {
         this._rules = InputValidator.createRules();
       } catch (error) {
         console.error('Error creating rules:', error);
-        // Return a simple fallback rules object
+        // Return proper fallback rules that actually validate
         this._rules = {
-          required: (message = 'Required') => ({ name: 'required', validator: () => true, message }),
-          string: (message = 'String') => ({ name: 'string', validator: () => true, message }),
-          oneOf: (values: any[], message = 'OneOf') => ({ name: 'oneOf', validator: () => true, message }),
-          filePath: (message = 'FilePath') => ({ name: 'filePath', validator: () => true, message })
+          required: (message = 'Required') => ({ 
+            name: 'required', 
+            validator: (value: any) => value !== undefined && value !== null && value !== '', 
+            message 
+          }),
+          string: (message = 'String required') => ({ 
+            name: 'string', 
+            validator: (value: any) => typeof value === 'string', 
+            message 
+          }),
+          number: (message = 'Number required') => ({ 
+            name: 'number', 
+            validator: (value: any) => typeof value === 'number' && !isNaN(value), 
+            message 
+          }),
+          boolean: (message = 'Boolean required') => ({ 
+            name: 'boolean', 
+            validator: (value: any) => typeof value === 'boolean', 
+            message 
+          }),
+          oneOf: (values: any[], message = 'Invalid value') => ({ 
+            name: 'oneOf', 
+            validator: (value: any) => values.includes(value), 
+            message: message || `Must be one of: ${values.join(', ')}` 
+          }),
+          filePath: (message = 'Invalid file path') => ({ 
+            name: 'filePath', 
+            validator: (value: string) => {
+              if (typeof value !== 'string') return false;
+              // Basic path validation - check for dangerous patterns
+              const dangerousPatterns = [/\.\.\//, /\/\.\./,  /\0/, /\x00/];
+              return !dangerousPatterns.some(pattern => pattern.test(value));
+            }, 
+            message 
+          }),
+          minLength: (min: number, message?: string) => ({
+            name: 'minLength',
+            validator: (value: string) => typeof value === 'string' && value.length >= min,
+            message: message || `Must be at least ${min} characters long`
+          }),
+          maxLength: (max: number, message?: string) => ({
+            name: 'maxLength',
+            validator: (value: string) => typeof value === 'string' && value.length <= max,
+            message: message || `Must not exceed ${max} characters`
+          }),
+          pattern: (regex: RegExp, message?: string) => ({
+            name: 'pattern',
+            validator: (value: string) => typeof value === 'string' && regex.test(value),
+            message: message || 'Does not match required pattern'
+          }),
+          url: (message = 'Invalid URL') => ({
+            name: 'url',
+            validator: (value: string) => {
+              try {
+                new URL(value);
+                return true;
+              } catch {
+                return false;
+              }
+            },
+            message
+          }),
+          safeText: (message = 'Contains unsafe content') => ({ 
+            name: 'safeText', 
+            validator: (value: string) => {
+              if (typeof value !== 'string') return false;
+              // Basic safety check - block obvious injection patterns
+              const unsafePatterns = [/<script/, /javascript:/, /eval\(/, /\${/, /`.*\$\{/];
+              return !unsafePatterns.some(pattern => pattern.test(value));
+            }, 
+            message 
+          })
         };
       }
     }
@@ -43,37 +111,37 @@ export class ConfigValidator {
 
     const schema: ValidationSchema = {
       targetLanguage: [
-        this.rules.required('Target language is required'),
-        this.rules.string('Target language must be a string'),
-        this.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
+        ConfigValidator.rules.required('Target language is required'),
+        ConfigValidator.rules.string('Target language must be a string'),
+        ConfigValidator.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
       ],
       
       outputDir: [
-        this.rules.required('Output directory is required'),
-        this.rules.string('Output directory must be a string'),
-        this.rules.filePath('Invalid output directory path')
+        ConfigValidator.rules.required('Output directory is required'),
+        ConfigValidator.rules.string('Output directory must be a string'),
+        ConfigValidator.rules.filePath('Invalid output directory path')
       ],
       
       aiProvider: [
-        this.rules.required('AI provider is required')
+        ConfigValidator.rules.required('AI provider is required')
       ],
       
       domain: [
-        this.rules.string('Domain must be a string'),
-        this.rules.maxLength(100, 'Domain name too long'),
-        this.rules.safeText('Domain contains unsafe characters')
+        ConfigValidator.rules.string('Domain must be a string'),
+        ConfigValidator.rules.maxLength(100, 'Domain name too long'),
+        ConfigValidator.rules.safeText('Domain contains unsafe characters')
       ],
       
       verbose: [
-        this.rules.boolean('Verbose must be a boolean')
+        ConfigValidator.rules.boolean('Verbose must be a boolean')
       ],
       
       incremental: [
-        this.rules.boolean('Incremental must be a boolean')
+        ConfigValidator.rules.boolean('Incremental must be a boolean')
       ],
       
       watchMode: [
-        this.rules.boolean('Watch mode must be a boolean')
+        ConfigValidator.rules.boolean('Watch mode must be a boolean')
       ]
     };
 
@@ -81,7 +149,7 @@ export class ConfigValidator {
 
     // Additional validation for AI provider
     if (config.aiProvider && typeof config.aiProvider === 'object') {
-      const aiProviderResult = this.validateAIProviderConfig(config.aiProvider);
+      const aiProviderResult = ConfigValidator.validateAIProviderConfig(config.aiProvider);
       if (!aiProviderResult.valid) {
         result.errors.push(...aiProviderResult.errors.map(err => ({
           ...err,
@@ -109,7 +177,7 @@ export class ConfigValidator {
       globalLogger.warn('Compiler configuration validation failed', {
         type: 'validation',
         errors: result.errors,
-        config: this.sanitizeConfigForLogging(config)
+        config: ConfigValidator.sanitizeConfigForLogging(config)
       });
     }
 
@@ -122,19 +190,19 @@ export class ConfigValidator {
   static validateAIProviderConfig(config: any): ValidationResult {
     const schema: ValidationSchema = {
       apiKey: [
-        this.rules.string('API key must be a string'),
-        this.rules.minLength(10, 'API key too short'),
-        this.rules.maxLength(200, 'API key too long')
+        ConfigValidator.rules.string('API key must be a string'),
+        ConfigValidator.rules.minLength(10, 'API key too short'),
+        ConfigValidator.rules.maxLength(200, 'API key too long')
       ],
       
       model: [
-        this.rules.string('Model must be a string'),
-        this.rules.maxLength(100, 'Model name too long'),
-        this.rules.pattern(/^[a-zA-Z0-9\-_.]+$/, 'Invalid model name format')
+        ConfigValidator.rules.string('Model must be a string'),
+        ConfigValidator.rules.maxLength(100, 'Model name too long'),
+        ConfigValidator.rules.pattern(/^[a-zA-Z0-9\-_.]+$/, 'Invalid model name format')
       ],
       
       maxRetries: [
-        this.rules.number('Max retries must be a number'),
+        ConfigValidator.rules.number('Max retries must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= 0 && value <= 10,
@@ -143,7 +211,7 @@ export class ConfigValidator {
       ],
       
       timeout: [
-        this.rules.number('Timeout must be a number'),
+        ConfigValidator.rules.number('Timeout must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= 1000 && value <= 300000,
@@ -152,13 +220,13 @@ export class ConfigValidator {
       ],
       
       endpoint: [
-        this.rules.string('Endpoint must be a string'),
-        this.rules.url('Invalid endpoint URL')
+        ConfigValidator.rules.string('Endpoint must be a string'),
+        ConfigValidator.rules.url('Invalid endpoint URL')
       ],
       
       apiFormat: [
-        this.rules.string('API format must be a string'),
-        this.rules.oneOf(['ollama', 'openai', 'llamacpp'], 'Invalid API format')
+        ConfigValidator.rules.string('API format must be a string'),
+        ConfigValidator.rules.oneOf(['ollama', 'openai', 'llamacpp'], 'Invalid API format')
       ]
     };
 
@@ -171,34 +239,34 @@ export class ConfigValidator {
   static validateAIContext(context: any): ValidationResult {
     const schema: ValidationSchema = {
       targetLanguage: [
-        this.rules.required('Target language is required'),
-        this.rules.string('Target language must be a string'),
-        this.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
+        ConfigValidator.rules.required('Target language is required'),
+        ConfigValidator.rules.string('Target language must be a string'),
+        ConfigValidator.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
       ],
       
       projectName: [
-        this.rules.required('Project name is required'),
-        this.rules.string('Project name must be a string'),
-        this.rules.minLength(1, 'Project name cannot be empty'),
-        this.rules.maxLength(100, 'Project name too long'),
-        this.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'Project name contains invalid characters')
+        ConfigValidator.rules.required('Project name is required'),
+        ConfigValidator.rules.string('Project name must be a string'),
+        ConfigValidator.rules.minLength(1, 'Project name cannot be empty'),
+        ConfigValidator.rules.maxLength(100, 'Project name too long'),
+        ConfigValidator.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'Project name contains invalid characters')
       ],
       
       fileName: [
-        this.rules.string('File name must be a string'),
-        this.rules.maxLength(255, 'File name too long'),
-        this.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'File name contains invalid characters')
+        ConfigValidator.rules.string('File name must be a string'),
+        ConfigValidator.rules.maxLength(255, 'File name too long'),
+        ConfigValidator.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'File name contains invalid characters')
       ],
       
       filePath: [
-        this.rules.string('File path must be a string'),
-        this.rules.filePath('Invalid file path')
+        ConfigValidator.rules.string('File path must be a string'),
+        ConfigValidator.rules.filePath('Invalid file path')
       ],
       
       domain: [
-        this.rules.string('Domain must be a string'),
-        this.rules.maxLength(100, 'Domain too long'),
-        this.rules.safeText('Domain contains unsafe characters')
+        ConfigValidator.rules.string('Domain must be a string'),
+        ConfigValidator.rules.maxLength(100, 'Domain too long'),
+        ConfigValidator.rules.safeText('Domain contains unsafe characters')
       ],
       
       requirements: [
@@ -246,7 +314,7 @@ export class ConfigValidator {
   static validateGenerationOptions(options: any): ValidationResult {
     const schema: ValidationSchema = {
       temperature: [
-        this.rules.number('Temperature must be a number'),
+        ConfigValidator.rules.number('Temperature must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= 0 && value <= 2,
@@ -255,7 +323,7 @@ export class ConfigValidator {
       ],
       
       maxTokens: [
-        this.rules.number('Max tokens must be a number'),
+        ConfigValidator.rules.number('Max tokens must be a number'),
         {
           name: 'range',
           validator: (value: number) => value > 0 && value <= 100000,
@@ -264,7 +332,7 @@ export class ConfigValidator {
       ],
       
       topP: [
-        this.rules.number('Top P must be a number'),
+        ConfigValidator.rules.number('Top P must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= 0 && value <= 1,
@@ -273,7 +341,7 @@ export class ConfigValidator {
       ],
       
       frequencyPenalty: [
-        this.rules.number('Frequency penalty must be a number'),
+        ConfigValidator.rules.number('Frequency penalty must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= -2 && value <= 2,
@@ -282,7 +350,7 @@ export class ConfigValidator {
       ],
       
       presencePenalty: [
-        this.rules.number('Presence penalty must be a number'),
+        ConfigValidator.rules.number('Presence penalty must be a number'),
         {
           name: 'range',
           validator: (value: number) => value >= -2 && value <= 2,
@@ -300,40 +368,40 @@ export class ConfigValidator {
   static validateCLIConfig(config: any): ValidationResult {
     const schema: ValidationSchema = {
       command: [
-        this.rules.required('Command is required'),
-        this.rules.string('Command must be a string'),
-        this.rules.oneOf(['compile', 'genesis', 'import', 'let'], 'Invalid command')
+        ConfigValidator.rules.required('Command is required'),
+        ConfigValidator.rules.string('Command must be a string'),
+        ConfigValidator.rules.oneOf(['compile', 'genesis', 'import', 'let'], 'Invalid command')
       ],
       
       input: [
-        this.rules.string('Input must be a string'),
-        this.rules.filePath('Invalid input file path')
+        ConfigValidator.rules.string('Input must be a string'),
+        ConfigValidator.rules.filePath('Invalid input file path')
       ],
       
       output: [
-        this.rules.string('Output must be a string'),
-        this.rules.filePath('Invalid output directory path')
+        ConfigValidator.rules.string('Output must be a string'),
+        ConfigValidator.rules.filePath('Invalid output directory path')
       ],
       
       target: [
-        this.rules.string('Target must be a string'),
-        this.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
+        ConfigValidator.rules.string('Target must be a string'),
+        ConfigValidator.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
       ],
       
       verbose: [
-        this.rules.boolean('Verbose must be a boolean')
+        ConfigValidator.rules.boolean('Verbose must be a boolean')
       ],
       
       watch: [
-        this.rules.boolean('Watch must be a boolean')
+        ConfigValidator.rules.boolean('Watch must be a boolean')
       ],
       
       full: [
-        this.rules.boolean('Full must be a boolean')
+        ConfigValidator.rules.boolean('Full must be a boolean')
       ],
       
       clearCache: [
-        this.rules.boolean('Clear cache must be a boolean')
+        ConfigValidator.rules.boolean('Clear cache must be a boolean')
       ]
     };
 
@@ -355,7 +423,7 @@ export class ConfigValidator {
       
       globalLogger.error(`Configuration validation failed: ${errorContext}`, undefined, {
         errors: result.errors,
-        config: this.sanitizeConfigForLogging(config)
+        config: ConfigValidator.sanitizeConfigForLogging(config)
       });
 
       throw new SunScriptError(ErrorCode.INVALID_CONFIG, `Invalid configuration: ${errorMessages.join(', ')}`, {
@@ -392,7 +460,7 @@ export class ConfigValidator {
     // Recursively sanitize nested objects
     for (const [key, value] of Object.entries(sanitized)) {
       if (value && typeof value === 'object') {
-        sanitized[key] = this.sanitizeConfigForLogging(value);
+        sanitized[key] = ConfigValidator.sanitizeConfigForLogging(value);
       }
     }
 

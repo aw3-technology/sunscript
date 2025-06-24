@@ -1,0 +1,9 @@
+function greetUser {
+  Create a simple greeting function that takes a name parameter.
+  Return a greeting message saying "Hello, [name]!"
+}
+
+function calculateSum {
+  Create a function that adds two numbers together.
+  Return the sum of the two parameters.
+}

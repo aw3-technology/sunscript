@@ -1,7 +1,7 @@
 {
   "name": "sunscript-compiler",
   "version": "1.0.0",
-  "description": "AI-Native Programming Language Compiler",
+  "description": "Natural language programming framework powered by Claude Sonnet 4 - transform human intentions into production-ready code",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -22,7 +22,15 @@
     "sunscript",
     "ai",
     "compiler",
-    "programming-language"
+    "programming-language",
+    "natural-language",
+    "claude",
+    "anthropic",
+    "code-generation",
+    "typescript",
+    "javascript",
+    "python",
+    "html"
   ],
   "author": "AW3 Technology, Inc.",
   "license": "SEE LICENSE IN LICENSE",

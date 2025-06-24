@@ -27,7 +27,9 @@ export class CodeGenerator {
         targetLanguage: context.targetLanguage,
         optimizations: [],
         warnings: []
-      }
+      },
+      success: true,
+      errors: []
     };
 
     // Get validator for target language

@@ -1,0 +1,7 @@
+@targets html
+
+function createWebPage {
+  Build a simple HTML page with a title "Test Page".
+  Include a header with "Welcome to SunScript".
+  Add a button that shows an alert when clicked.
+}

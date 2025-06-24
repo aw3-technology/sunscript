@@ -337,6 +337,14 @@ export class InputValidator {
       const value = config[field];
       const fieldRules = Array.isArray(rules) ? rules : [rules];
 
+      // Check if field is required
+      const isRequired = fieldRules.some(rule => rule.name === 'required');
+      
+      // Skip validation for optional fields that are not present
+      if (!isRequired && (value === undefined || value === null)) {
+        continue;
+      }
+
       for (const rule of fieldRules) {
         try {
           const result = rule.validator(value);

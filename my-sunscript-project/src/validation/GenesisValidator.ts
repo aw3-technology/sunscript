@@ -30,7 +30,57 @@ export class GenesisValidator {
   
   private static get rules() {
     if (!this._rules) {
-      this._rules = InputValidator.createRules();
+      try {
+        this._rules = InputValidator.createRules();
+      } catch (error) {
+        console.error('Error creating Genesis validation rules:', error);
+        // Use proper fallback rules
+        this._rules = {
+          required: (message = 'Required') => ({ 
+            name: 'required', 
+            validator: (value: any) => value !== undefined && value !== null && value !== '', 
+            message 
+          }),
+          string: (message = 'String required') => ({ 
+            name: 'string', 
+            validator: (value: any) => typeof value === 'string', 
+            message 
+          }),
+          minLength: (min: number, message?: string) => ({
+            name: 'minLength',
+            validator: (value: string) => typeof value === 'string' && value.length >= min,
+            message: message || `Must be at least ${min} characters long`
+          }),
+          maxLength: (max: number, message?: string) => ({
+            name: 'maxLength',
+            validator: (value: string) => typeof value === 'string' && value.length <= max,
+            message: message || `Must not exceed ${max} characters`
+          }),
+          pattern: (regex: RegExp, message?: string) => ({
+            name: 'pattern',
+            validator: (value: string) => typeof value === 'string' && regex.test(value),
+            message: message || 'Does not match required pattern'
+          }),
+          filePath: (message = 'Invalid file path') => ({ 
+            name: 'filePath', 
+            validator: (value: string) => {
+              if (typeof value !== 'string') return false;
+              const dangerousPatterns = [/\.\.\//, /\/\.\./, /\0/, /\x00/];
+              return !dangerousPatterns.some(pattern => pattern.test(value));
+            }, 
+            message 
+          }),
+          safeText: (message = 'Contains unsafe content') => ({ 
+            name: 'safeText', 
+            validator: (value: string) => {
+              if (typeof value !== 'string') return false;
+              const unsafePatterns = [/<script/, /javascript:/, /eval\(/, /\${/, /`.*\$\{/];
+              return !unsafePatterns.some(pattern => pattern.test(value));
+            }, 
+            message 
+          })
+        };
+      }
     }
     return this._rules;
   }
@@ -405,12 +455,12 @@ export class GenesisValidator {
   private static validateProjectDirective(project: string): ValidationResult {
     const schema = {
       project: [
-        this.rules.required('Project name is required'),
-        this.rules.string('Project name must be a string'),
-        this.rules.minLength(1, 'Project name cannot be empty'),
-        this.rules.maxLength(100, 'Project name too long'),
-        this.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'Project name contains invalid characters'),
-        this.rules.safeText('Project name contains unsafe content')
+        GenesisValidator.rules.required('Project name is required'),
+        GenesisValidator.rules.string('Project name must be a string'),
+        GenesisValidator.rules.minLength(1, 'Project name cannot be empty'),
+        GenesisValidator.rules.maxLength(100, 'Project name too long'),
+        GenesisValidator.rules.pattern(/^[a-zA-Z0-9\-_. ]+$/, 'Project name contains invalid characters'),
+        GenesisValidator.rules.safeText('Project name contains unsafe content')
       ]
     };
 
@@ -423,9 +473,9 @@ export class GenesisValidator {
   private static validateVersionDirective(version: string): ValidationResult {
     const schema = {
       version: [
-        this.rules.required('Version is required'),
-        this.rules.string('Version must be a string'),
-        this.rules.pattern(/^\d+\.\d+\.\d+(-[\w.]+)?$/, 'Version must follow semantic versioning (e.g., 1.0.0)')
+        GenesisValidator.rules.required('Version is required'),
+        GenesisValidator.rules.string('Version must be a string'),
+        GenesisValidator.rules.pattern(/^\d+\.\d+\.\d+(-[\w.]+)?$/, 'Version must follow semantic versioning (e.g., 1.0.0)')
       ]
     };
 
@@ -438,9 +488,9 @@ export class GenesisValidator {
   private static validateAuthorDirective(author: string): ValidationResult {
     const schema = {
       author: [
-        this.rules.string('Author must be a string'),
-        this.rules.maxLength(200, 'Author name too long'),
-        this.rules.safeText('Author contains unsafe content')
+        GenesisValidator.rules.string('Author must be a string'),
+        GenesisValidator.rules.maxLength(200, 'Author name too long'),
+        GenesisValidator.rules.safeText('Author contains unsafe content')
       ]
     };
 
@@ -453,9 +503,9 @@ export class GenesisValidator {
   private static validatePathDirective(type: string, path: string): ValidationResult {
     const schema = {
       [type]: [
-        this.rules.required(`${type} path is required`),
-        this.rules.string(`${type} path must be a string`),
-        this.rules.filePath(`Invalid ${type} path`),
+        GenesisValidator.rules.required(`${type} path is required`),
+        GenesisValidator.rules.string(`${type} path must be a string`),
+        GenesisValidator.rules.filePath(`Invalid ${type} path`),
         {
           name: 'relativePath',
           validator: (value: string) => !value.includes('..'),
@@ -473,9 +523,9 @@ export class GenesisValidator {
   private static validateContextDirective(context: string): ValidationResult {
     const schema = {
       context: [
-        this.rules.string('Context must be a string'),
-        this.rules.maxLength(500, 'Context too long'),
-        this.rules.safeText('Context contains unsafe content')
+        GenesisValidator.rules.string('Context must be a string'),
+        GenesisValidator.rules.maxLength(500, 'Context too long'),
+        GenesisValidator.rules.safeText('Context contains unsafe content')
       ]
     };
 

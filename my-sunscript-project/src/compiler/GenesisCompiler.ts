@@ -147,7 +147,9 @@ export class GenesisCompiler extends EventEmitter {
         for (const [filePath, code] of Object.entries(projectResult.code)) {
           result.files.set(filePath, {
             code: { [path.basename(filePath, path.extname(filePath))]: code },
-            metadata: projectResult.metadata
+            metadata: projectResult.metadata,
+            success: true,
+            errors: []
           });
         }
         

@@ -313,7 +313,9 @@ export class IncrementalCompiler extends EventEmitter {
         warnings: [],
         targetLanguage: this.config.targetLanguage,
         optimizations: []
-      }
+      },
+      success: true,
+      errors: []
     };
     
     for (const result of results) {

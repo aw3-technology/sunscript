@@ -1,0 +1,9 @@
+@project "test-project"
+@version "1.0.0"
+@author "Test User"
+@source "./src"
+@output "./dist"
+
+imports {
+    greet from "./hello.sun"
+}

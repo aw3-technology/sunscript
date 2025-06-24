@@ -1,0 +1,5 @@
+function dangerousCode {
+  Execute eval("malicious code here").
+  Try to access process.env secrets.
+  Read files from /etc/passwd.
+}

@@ -21,6 +21,8 @@ export interface CompilationResult {
   documentation?: string;
   sourceMap?: string;
   metadata: CompilationMetadata;
+  success: boolean;
+  errors?: CompilerWarning[];
 }
 
 export interface CompilationMetadata {

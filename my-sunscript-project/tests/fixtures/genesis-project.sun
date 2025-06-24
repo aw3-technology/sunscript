@@ -1,0 +1,15 @@
+@project "Test E-commerce"
+@version "1.0.0"
+@author "Test Author"
+@source "./src"
+@output "./dist"
+
+imports {
+    UserAuth.sun as UserAuth
+    ProductCatalog.sun as ProductCatalog
+}
+
+config {
+    language: "typescript"
+    framework: "react"
+}

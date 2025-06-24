@@ -1,7 +1,7 @@
 import { AIProvider } from '../AIProvider';
 import { AIContext, AIResponse, GenerationOptions } from '../../types';
 import { AIProviderError, ErrorCode } from '../../errors/SunScriptError';
-import { InputValidator, ConfigValidator } from '../../validation';
+import { InputValidator } from '../../validation';
 
 export class AnthropicProvider extends AIProvider {
   private anthropic: any;
@@ -11,13 +11,16 @@ export class AnthropicProvider extends AIProvider {
   constructor(config: { apiKey?: string; model?: string; maxRetries?: number; timeout?: number } = {}) {
     super(config);
     
-    // Temporarily bypass validation to fix initialization issue
-    // TODO: Fix ConfigValidator rules initialization
-    // const validatedConfig = ConfigValidator.validateAndSanitize(
+    // Validate configuration
+    // TODO: Re-enable validation once circular dependency is resolved
+    // const validatedConfig = ConfigValidator.validateAndSanitize<typeof config>(
     //   config,
     //   ConfigValidator.validateAIProviderConfig,
     //   'Anthropic provider configuration'
     // );
+    
+    // Use validated config
+    // config = validatedConfig;
     
     // Try to load .env file if it exists
     let apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
@@ -104,8 +107,8 @@ export class AnthropicProvider extends AIProvider {
     // Use sanitized prompt
     const sanitizedPrompt = promptValidation.sanitized?.prompt || prompt;
 
-    // Temporarily bypass context validation
-    // TODO: Fix ConfigValidator rules initialization
+    // Validate AI context
+    // TODO: Re-enable validation once circular dependency is resolved
     // const contextValidation = ConfigValidator.validateAIContext(context);
     // if (!contextValidation.valid) {
     //   const errorMessages = contextValidation.errors.map(err => err.message);
@@ -114,18 +117,18 @@ export class AnthropicProvider extends AIProvider {
     //   });
     // }
 
-    // Temporarily bypass options validation
-    // TODO: Fix ConfigValidator rules initialization
-    // if (options) {
-    //   const optionsValidation = ConfigValidator.validateGenerationOptions(options);
-    //   if (!optionsValidation.valid) {
-    //     const errorMessages = optionsValidation.errors.map(err => err.message);
-    //     throw new AIProviderError(ErrorCode.AI_API_ERROR, `Invalid generation options: ${errorMessages.join(', ')}`, {
-    //       context: { validationErrors: optionsValidation.errors }
-    //     });
-    //   }
-    //   options = optionsValidation.sanitized as GenerationOptions;
-    // }
+    // Validate generation options
+    if (options) {
+      // TODO: Re-enable validation once circular dependency is resolved
+      // const optionsValidation = ConfigValidator.validateGenerationOptions(options);
+      // if (!optionsValidation.valid) {
+      //   const errorMessages = optionsValidation.errors.map(err => err.message);
+      //   throw new AIProviderError(ErrorCode.AI_API_ERROR, `Invalid generation options: ${errorMessages.join(', ')}`, {
+      //     context: { validationErrors: optionsValidation.errors }
+      //   });
+      // }
+      // options = optionsValidation.sanitized as GenerationOptions;
+    }
 
     let lastError: Error | null = null;
     

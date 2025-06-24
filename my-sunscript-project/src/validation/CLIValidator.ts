@@ -23,7 +23,43 @@ export class CLIValidator {
   
   private static get rules() {
     if (!this._rules) {
-      this._rules = InputValidator.createRules();
+      try {
+        this._rules = InputValidator.createRules();
+      } catch (error) {
+        console.error('Error creating CLI validation rules:', error);
+        // Use proper fallback rules
+        this._rules = {
+          required: (message = 'Required') => ({ 
+            name: 'required', 
+            validator: (value: any) => value !== undefined && value !== null && value !== '', 
+            message 
+          }),
+          string: (message = 'String required') => ({ 
+            name: 'string', 
+            validator: (value: any) => typeof value === 'string', 
+            message 
+          }),
+          boolean: (message = 'Boolean required') => ({ 
+            name: 'boolean', 
+            validator: (value: any) => typeof value === 'boolean', 
+            message 
+          }),
+          oneOf: (values: any[], message = 'Invalid value') => ({ 
+            name: 'oneOf', 
+            validator: (value: any) => values.includes(value), 
+            message: message || `Must be one of: ${values.join(', ')}` 
+          }),
+          filePath: (message = 'Invalid file path') => ({ 
+            name: 'filePath', 
+            validator: (value: string) => {
+              if (typeof value !== 'string') return false;
+              const dangerousPatterns = [/\.\.\//, /\/\.\./, /\0/, /\x00/];
+              return !dangerousPatterns.some(pattern => pattern.test(value));
+            }, 
+            message 
+          })
+        };
+      }
     }
     return this._rules;
   }
@@ -332,9 +368,9 @@ export class CLIValidator {
     const schemas: Record<string, Record<string, ValidationRule | ValidationRule[]>> = {
       compile: {
         input: [
-          this.rules.required('Input file is required'),
-          this.rules.string('Input must be a string'),
-          this.rules.filePath('Invalid input file path'),
+          CLIValidator.rules.required('Input file is required'),
+          CLIValidator.rules.string('Input must be a string'),
+          CLIValidator.rules.filePath('Invalid input file path'),
           {
             name: 'sunExtension',
             validator: (value: string) => value.endsWith('.sun'),
@@ -342,65 +378,65 @@ export class CLIValidator {
           }
         ],
         output: [
-          this.rules.string('Output must be a string'),
-          this.rules.filePath('Invalid output directory path')
+          CLIValidator.rules.string('Output must be a string'),
+          CLIValidator.rules.filePath('Invalid output directory path')
         ],
         target: [
-          this.rules.string('Target must be a string'),
-          this.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
+          CLIValidator.rules.string('Target must be a string'),
+          CLIValidator.rules.oneOf(['javascript', 'typescript', 'python', 'html'], 'Invalid target language')
         ],
-        verbose: [this.rules.boolean('Verbose must be a boolean')],
-        watch: [this.rules.boolean('Watch must be a boolean')]
+        verbose: [CLIValidator.rules.boolean('Verbose must be a boolean')],
+        watch: [CLIValidator.rules.boolean('Watch must be a boolean')]
       },
 
       genesis: {
         file: [
-          this.rules.string('Genesis file must be a string'),
-          this.rules.filePath('Invalid genesis file path'),
+          CLIValidator.rules.string('Genesis file must be a string'),
+          CLIValidator.rules.filePath('Invalid genesis file path'),
           {
             name: 'sunExtension',
             validator: (value: string) => value.endsWith('.sun'),
             message: 'Genesis file must have .sun extension'
           }
         ],
-        full: [this.rules.boolean('Full must be a boolean')],
-        watch: [this.rules.boolean('Watch must be a boolean')],
-        clearCache: [this.rules.boolean('Clear cache must be a boolean')],
-        verbose: [this.rules.boolean('Verbose must be a boolean')]
+        full: [CLIValidator.rules.boolean('Full must be a boolean')],
+        watch: [CLIValidator.rules.boolean('Watch must be a boolean')],
+        clearCache: [CLIValidator.rules.boolean('Clear cache must be a boolean')],
+        verbose: [CLIValidator.rules.boolean('Verbose must be a boolean')]
       },
 
       let: {
         genesis: [
-          this.rules.string('Genesis file must be a string'),
-          this.rules.filePath('Invalid genesis file path')
+          CLIValidator.rules.string('Genesis file must be a string'),
+          CLIValidator.rules.filePath('Invalid genesis file path')
         ],
-        full: [this.rules.boolean('Full must be a boolean')],
-        watch: [this.rules.boolean('Watch must be a boolean')],
-        clearCache: [this.rules.boolean('Clear cache must be a boolean')],
-        verbose: [this.rules.boolean('Verbose must be a boolean')]
+        full: [CLIValidator.rules.boolean('Full must be a boolean')],
+        watch: [CLIValidator.rules.boolean('Watch must be a boolean')],
+        clearCache: [CLIValidator.rules.boolean('Clear cache must be a boolean')],
+        verbose: [CLIValidator.rules.boolean('Verbose must be a boolean')]
       },
 
       run: {
         file: [
-          this.rules.required('File is required'),
-          this.rules.string('File must be a string'),
-          this.rules.filePath('Invalid file path'),
+          CLIValidator.rules.required('File is required'),
+          CLIValidator.rules.string('File must be a string'),
+          CLIValidator.rules.filePath('Invalid file path'),
           {
             name: 'sunExtension',
             validator: (value: string) => value.endsWith('.sun'),
             message: 'File must have .sun extension'
           }
         ],
-        full: [this.rules.boolean('Full must be a boolean')],
-        watch: [this.rules.boolean('Watch must be a boolean')],
-        clearCache: [this.rules.boolean('Clear cache must be a boolean')],
-        verbose: [this.rules.boolean('Verbose must be a boolean')]
+        full: [CLIValidator.rules.boolean('Full must be a boolean')],
+        watch: [CLIValidator.rules.boolean('Watch must be a boolean')],
+        clearCache: [CLIValidator.rules.boolean('Clear cache must be a boolean')],
+        verbose: [CLIValidator.rules.boolean('Verbose must be a boolean')]
       },
 
       import: {
         url: [
-          this.rules.required('GitHub URL is required'),
-          this.rules.string('URL must be a string'),
+          CLIValidator.rules.required('GitHub URL is required'),
+          CLIValidator.rules.string('URL must be a string'),
           {
             name: 'githubUrl',
             validator: (value: string) => /^https:\/\/github\.com\/[^\/]+\/[^\/]+/.test(value),
@@ -408,14 +444,14 @@ export class CLIValidator {
           }
         ],
         output: [
-          this.rules.string('Output directory must be a string'),
-          this.rules.filePath('Invalid output directory path')
+          CLIValidator.rules.string('Output directory must be a string'),
+          CLIValidator.rules.filePath('Invalid output directory path')
         ],
         source: [
-          this.rules.string('Source directory must be a string'),
-          this.rules.filePath('Invalid source directory path')
+          CLIValidator.rules.string('Source directory must be a string'),
+          CLIValidator.rules.filePath('Invalid source directory path')
         ],
-        comments: [this.rules.boolean('Comments must be a boolean')]
+        comments: [CLIValidator.rules.boolean('Comments must be a boolean')]
       }
     };
 

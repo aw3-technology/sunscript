@@ -1,0 +1,5 @@
+@syntax flex
+
+Create a simple calculator that can add and subtract numbers.
+The calculator should have buttons for numbers 0-9 and operations + and -.
+When someone clicks equals, show the result.

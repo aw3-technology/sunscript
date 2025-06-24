@@ -68,6 +68,8 @@ export class MultiPromptGenerator {
         optimizations: [],
         warnings: []
       },
+      success: true,
+      errors: [],
       generationPlan: [],
       phases: {
         planning: { duration: 0, decisions: [] },
