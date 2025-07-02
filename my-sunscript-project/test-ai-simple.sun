@@ -1,0 +1,11 @@
+@syntax standard
+
+function simpleTest {
+  This is a simple function
+  
+  @ai {
+    Just return the string "Hello from AI block!"
+  }
+  
+  End of function
+}

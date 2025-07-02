@@ -79,11 +79,16 @@ export class Lexer {
     // Directives - special syntax for metadata and configuration
     if (this.match(patterns.directive)) {
       const directive = this.lastMatch.substring(1); // Remove @
-      this.addToken(TokenType.AI_DIRECTIVE, directive);
+      // Check if this is an AI compilation directive
+      if (directive.toLowerCase() === 'ai') {
+        this.addToken(TokenType.AI_COMPILE, directive);
+      } else {
+        this.addToken(TokenType.AI_DIRECTIVE, directive);
+      }
       return;
     }
 
-    // Structural delimiters - these provide the scaffolding for large applications
+    // Structural delimiters and operators
     if (this.match(patterns.openBrace)) {
       this.addToken(TokenType.OPEN_BRACE, '{');
       return;
@@ -91,6 +96,69 @@ export class Lexer {
 
     if (this.match(patterns.closeBrace)) {
       this.addToken(TokenType.CLOSE_BRACE, '}');
+      return;
+    }
+    
+    if (this.match(patterns.openBracket)) {
+      this.addToken(TokenType.OPEN_BRACKET, '[');
+      return;
+    }
+    
+    if (this.match(patterns.closeBracket)) {
+      this.addToken(TokenType.CLOSE_BRACKET, ']');
+      return;
+    }
+    
+    if (this.match(patterns.openParen)) {
+      this.addToken(TokenType.OPEN_PAREN, '(');
+      return;
+    }
+    
+    if (this.match(patterns.closeParen)) {
+      this.addToken(TokenType.CLOSE_PAREN, ')');
+      return;
+    }
+    
+    if (this.match(patterns.colon)) {
+      this.addToken(TokenType.COLON, ':');
+      return;
+    }
+    
+    if (this.match(patterns.comma)) {
+      this.addToken(TokenType.COMMA, ',');
+      return;
+    }
+    
+    if (this.match(patterns.dot)) {
+      this.addToken(TokenType.DOT, '.');
+      return;
+    }
+    
+    if (this.match(patterns.fatArrow)) {
+      this.addToken(TokenType.FAT_ARROW, '=>');
+      return;
+    }
+    
+    if (this.match(patterns.arrow)) {
+      this.addToken(TokenType.ARROW, '->');
+      return;
+    }
+    
+    if (this.match(patterns.equals)) {
+      this.addToken(TokenType.EQUALS, '=');
+      return;
+    }
+    
+    // String literals
+    if (this.match(patterns.string)) {
+      const value = this.lastMatch.slice(1, -1); // Remove quotes
+      this.addToken(TokenType.STRING, value);
+      return;
+    }
+    
+    // Number literals
+    if (this.match(patterns.number)) {
+      this.addToken(TokenType.NUMBER, this.lastMatch);
       return;
     }
 
@@ -112,6 +180,16 @@ export class Lexer {
       if (word && patterns.identifier.test(word)) {
         this.advance(word.length);
         this.addToken(TokenType.IDENTIFIER, word);
+        return;
+      }
+    }
+    
+    // Special handling for 'from' keyword in import statements
+    if (this.isInImportContext()) {
+      const word = this.peekWord();
+      if (word && word.toLowerCase() === 'from') {
+        this.advance(word.length);
+        this.addToken(TokenType.FROM, word);
         return;
       }
     }
@@ -325,7 +403,9 @@ export class Lexer {
   private isStructuralKeyword(keyword: string): boolean {
     // Only treat these as keywords when they start statements - everything else is natural language
     const structuralKeywords = new Set([
-      'function', 'component', 'api', 'model', 'pipeline', 'behavior', 'test',
+      'function', 'component', 'api', 'model', 'pipeline', 'behavior', 'test', 'app',
+      'import', 'from', 'export', 'default',
+      'state', 'routes', 'styles', 'render', 'html',
       'project', 'version', 'author', 'source', 'output', 'imports', 'config', 
       'entrypoints', 'build', 'dependencies', 'deployment'
     ]);
@@ -351,7 +431,20 @@ export class Lexer {
         lastToken.type === TokenType.COMPONENT ||
         lastToken.type === TokenType.API ||
         lastToken.type === TokenType.MODEL ||
-        lastToken.type === TokenType.PIPELINE) {
+        lastToken.type === TokenType.PIPELINE ||
+        lastToken.type === TokenType.APP ||
+        lastToken.type === TokenType.BEHAVIOR ||
+        lastToken.type === TokenType.TEST) {
+      return true;
+    }
+    
+    // After import, expect identifier
+    if (lastToken.type === TokenType.IMPORT) {
+      return true;
+    }
+    
+    // After from, expect string literal or identifier
+    if (lastToken.type === TokenType.FROM) {
       return true;
     }
     
@@ -391,5 +484,20 @@ export class Lexer {
     }
     
     return foundFunction && braceDepth === 0;
+  }
+  
+  private isInImportContext(): boolean {
+    // Check if we're in an import statement
+    // Look for IMPORT token on the current line
+    for (let i = this.tokens.length - 1; i >= 0; i--) {
+      const token = this.tokens[i];
+      if (token.type === TokenType.NEWLINE) {
+        break; // Stop at line boundary
+      }
+      if (token.type === TokenType.IMPORT) {
+        return true;
+      }
+    }
+    return false;
   }
 }

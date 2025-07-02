@@ -1,0 +1,85 @@
+@syntax standard
+@targets javascript
+
+function calculateMetrics {
+  Take an array of numbers as input
+  
+  @ai {
+    Calculate the following metrics:
+    - Mean (average)
+    - Median (middle value when sorted)
+    - Mode (most frequent value)
+    - Standard deviation
+    - Min and max values
+    
+    Return an object with all these metrics.
+    Handle edge cases like empty arrays gracefully.
+  }
+}
+
+component Dashboard {
+  Create a dashboard component that shows user statistics
+  
+  @ai {
+    Generate a function that fetches user data from an API endpoint '/api/users/stats'
+    and displays it in a clean, formatted way. Include:
+    - Total users count
+    - Active users in last 24 hours
+    - New signups this week
+    - User growth percentage
+    
+    Use modern JavaScript async/await syntax.
+  }
+  
+  The dashboard should update every 30 seconds
+  
+  @ai {
+    Add a refresh button that manually triggers data refresh
+    with a loading spinner while fetching
+  }
+}
+
+app DataAnalyzer {
+  title: "Data Analysis Tool"
+  
+  @ai {
+    Create a file upload handler that:
+    1. Accepts CSV files only
+    2. Parses the CSV data
+    3. Validates the data format
+    4. Shows a preview of the first 10 rows
+    5. Allows column selection for analysis
+  }
+  
+  component FileUploader {
+    Handle drag and drop file uploads
+    Show upload progress
+    
+    @ai {
+      Implement drag and drop functionality with visual feedback
+      when hovering over the drop zone. Change border color and
+      show "Drop file here" message.
+    }
+  }
+  
+  @ai {
+    Create a data visualization component that:
+    - Takes the parsed CSV data
+    - Generates appropriate charts based on data types
+    - For numeric data: line charts, bar charts, histograms
+    - For categorical data: pie charts, word clouds
+    - Make it interactive with tooltips on hover
+  }
+}
+
+function processPayment {
+  @ai {
+    Implement a secure payment processing function that:
+    1. Validates credit card number using Luhn algorithm
+    2. Checks expiry date is in the future
+    3. Validates CVV format
+    4. Returns success or detailed error messages
+    
+    Important: Do not log or store any sensitive payment information
+  }
+}

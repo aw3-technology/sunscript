@@ -10,11 +10,24 @@ export type ASTNodeType =
   | 'PipelineDeclaration'
   | 'BehaviorDeclaration'
   | 'TestDeclaration'
+  | 'AppDeclaration'
   | 'ExpressionStatement'
   | 'NaturalLanguageExpression'
   | 'AIDirective'
+  | 'AICompileBlock'
   | 'Block'
+  | 'ImportStatement'
   | 'ImportDeclaration'
+  | 'ExportStatement'
+  | 'StateDeclaration'
+  | 'RoutesDeclaration'
+  | 'StylesDeclaration'
+  | 'RenderStatement'
+  | 'JSXElement'
+  | 'JSXAttribute'
+  | 'JSXExpression'
+  | 'JSXText'
+  | 'TemplateDirective'
   | 'ConfigBlock'
   | 'EntrypointDeclaration'
   | 'BuildConfig'
@@ -185,4 +198,162 @@ export interface DeploymentEnvironment {
   ssl?: boolean;
   cdn?: boolean;
   [key: string]: any;
+}
+
+// New AST nodes for advanced syntax
+export interface AppDeclaration extends ASTNode {
+  type: 'AppDeclaration';
+  name: string;
+  body: Statement[];
+  metadata: AppMetadata;
+}
+
+export interface AppMetadata {
+  title?: string;
+  description?: string;
+  pages?: PageDefinition[];
+  routes?: Record<string, RouteDefinition>;
+  config?: Record<string, any>;
+  directives?: AIDirective[];
+}
+
+export interface PageDefinition {
+  path: string;
+  component: string;
+  title?: string;
+  protected?: boolean;
+}
+
+export interface RouteDefinition {
+  component?: string;
+  redirect?: string;
+  action?: string;
+}
+
+export interface ImportStatement extends ASTNode {
+  type: 'ImportStatement';
+  specifiers: ImportSpecifier[];
+  source: string;
+}
+
+export interface ImportSpecifier {
+  type: 'ImportDefaultSpecifier' | 'ImportSpecifier' | 'ImportNamespaceSpecifier';
+  local: string;
+  imported?: string;
+}
+
+export interface ExportStatement extends ASTNode {
+  type: 'ExportStatement';
+  declaration?: ASTNode;
+  specifiers?: ExportSpecifier[];
+  source?: string;
+  default?: boolean;
+}
+
+export interface ExportSpecifier {
+  local: string;
+  exported: string;
+}
+
+export interface StateDeclaration extends ASTNode {
+  type: 'StateDeclaration';
+  properties: StateProperty[];
+}
+
+export interface StateProperty {
+  name: string;
+  type?: string;
+  initialValue?: any;
+}
+
+export interface RoutesDeclaration extends ASTNode {
+  type: 'RoutesDeclaration';
+  routes: RouteEntry[];
+}
+
+export interface RouteEntry {
+  path: string;
+  component: string;
+  guards?: string[];
+}
+
+export interface StylesDeclaration extends ASTNode {
+  type: 'StylesDeclaration';
+  rules: StyleRule[];
+}
+
+export interface StyleRule {
+  selector: string;
+  declarations: StyleDeclaration[];
+}
+
+export interface StyleDeclaration {
+  property: string;
+  value: string;
+}
+
+export interface RenderStatement extends ASTNode {
+  type: 'RenderStatement';
+  renderType: 'html' | 'json' | 'text';
+  body: JSXElement | Expression;
+}
+
+export interface JSXElement extends ASTNode {
+  type: 'JSXElement';
+  openingElement: JSXOpeningElement;
+  closingElement?: JSXClosingElement;
+  children: (JSXElement | JSXExpression | JSXText)[];
+  selfClosing?: boolean;
+}
+
+export interface JSXOpeningElement {
+  name: string;
+  attributes: JSXAttribute[];
+}
+
+export interface JSXClosingElement {
+  name: string;
+}
+
+export interface JSXAttribute extends ASTNode {
+  type: 'JSXAttribute';
+  name: string;
+  value?: JSXAttributeValue;
+}
+
+export type JSXAttributeValue = string | JSXExpression | boolean;
+
+export interface JSXExpression extends ASTNode {
+  type: 'JSXExpression';
+  expression: Expression | string;
+}
+
+export interface JSXText extends ASTNode {
+  type: 'JSXText';
+  value: string;
+}
+
+export interface TemplateDirective extends ASTNode {
+  type: 'TemplateDirective';
+  directive: 'if' | 'else' | 'for' | 'each';
+  condition?: Expression;
+  iterator?: IteratorDefinition;
+  body: (JSXElement | JSXExpression | JSXText | TemplateDirective)[];
+  alternate?: (JSXElement | JSXExpression | JSXText | TemplateDirective)[];
+}
+
+export interface IteratorDefinition {
+  variable: string;
+  iterable: Expression;
+  index?: string;
+}
+
+// AI Compilation Block
+export interface AICompileBlock extends ASTNode {
+  type: 'AICompileBlock';
+  description: string;
+  context?: string;
+  constraints?: string[];
+  targetLanguage?: string;
+  inline?: boolean;
 }

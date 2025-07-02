@@ -9,6 +9,20 @@ export enum TokenType {
   PIPELINE = 'PIPELINE',
   BEHAVIOR = 'BEHAVIOR',
   TEST = 'TEST',
+  APP = 'APP',
+  
+  // Import/Export
+  IMPORT = 'IMPORT',
+  FROM = 'FROM',
+  EXPORT = 'EXPORT',
+  DEFAULT = 'DEFAULT',
+  
+  // Component-specific keywords
+  STATE = 'STATE',
+  ROUTES = 'ROUTES',
+  STYLES = 'STYLES',
+  RENDER = 'RENDER',
+  HTML = 'HTML',
   
   // Genesis-specific keywords
   PROJECT = 'PROJECT',
@@ -33,6 +47,7 @@ export enum TokenType {
   
   // Directives
   AI_DIRECTIVE = 'AI_DIRECTIVE',
+  AI_COMPILE = 'AI_COMPILE',
   OPTIMIZE = 'OPTIMIZE',
   CONTEXT = 'CONTEXT',
   TARGETS = 'TARGETS',
@@ -45,6 +60,32 @@ export enum TokenType {
   COMMA = 'COMMA',
   OPEN_BRACE = 'OPEN_BRACE',
   CLOSE_BRACE = 'CLOSE_BRACE',
+  OPEN_BRACKET = 'OPEN_BRACKET',
+  CLOSE_BRACKET = 'CLOSE_BRACKET',
+  OPEN_PAREN = 'OPEN_PAREN',
+  CLOSE_PAREN = 'CLOSE_PAREN',
+  DOT = 'DOT',
+  EQUALS = 'EQUALS',
+  ARROW = 'ARROW',
+  FAT_ARROW = 'FAT_ARROW',
+  
+  // HTML/JSX tokens
+  LESS_THAN = 'LESS_THAN',
+  GREATER_THAN = 'GREATER_THAN',
+  SLASH = 'SLASH',
+  TAG_NAME = 'TAG_NAME',
+  ATTRIBUTE_NAME = 'ATTRIBUTE_NAME',
+  ATTRIBUTE_VALUE = 'ATTRIBUTE_VALUE',
+  JSX_EXPRESSION_START = 'JSX_EXPRESSION_START',
+  JSX_EXPRESSION_END = 'JSX_EXPRESSION_END',
+  JSX_TEXT = 'JSX_TEXT',
+  SELF_CLOSING = 'SELF_CLOSING',
+  
+  // Template directives
+  TEMPLATE_IF = 'TEMPLATE_IF',
+  TEMPLATE_ELSE = 'TEMPLATE_ELSE',
+  TEMPLATE_FOR = 'TEMPLATE_FOR',
+  TEMPLATE_END = 'TEMPLATE_END',
   
   // Literals
   STRING = 'STRING',

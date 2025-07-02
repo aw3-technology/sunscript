@@ -89,10 +89,22 @@ export class Parser {
     while (!this.isAtEnd()) {
       if (this.match(TokenType.AI_DIRECTIVE)) {
         const directive = this.previous().value;
-        if (directive === 'syntax' && this.check(TokenType.TEXT)) {
-          const value = this.advance().value.toLowerCase();
-          if (value === 'flex') {
-            program.metadata.syntaxMode = 'flex';
+        if (directive === 'syntax') {
+          if (this.check(TokenType.TEXT)) {
+            const value = this.advance().value.toLowerCase();
+            if (value === 'flex') {
+              program.metadata.syntaxMode = 'flex';
+            }
+          } else if (this.check(TokenType.STRING)) {
+            const value = this.advance().value.toLowerCase();
+            if (value === 'flex') {
+              program.metadata.syntaxMode = 'flex';
+            }
+          } else if (this.check(TokenType.IDENTIFIER)) {
+            const value = this.advance().value.toLowerCase();
+            if (value === 'flex' || value === 'standard') {
+              program.metadata.syntaxMode = value as 'flex' | 'standard';
+            }
           }
         }
       } else {
@@ -161,6 +173,12 @@ export class Parser {
   private declaration(): ASTNode | null {
     this.updateContext('declaration');
     
+    // Import statements
+    if (this.match(TokenType.IMPORT)) {
+      return this.importStatement();
+    }
+    
+    // Core declarations
     if (this.match(TokenType.FUNCTION)) {
       return this.functionDeclaration();
     }
@@ -169,10 +187,20 @@ export class Parser {
       return this.componentDeclaration();
     }
     
+    if (this.match(TokenType.APP)) {
+      return this.appDeclaration();
+    }
+    
     if (this.match(TokenType.API)) {
       return this.apiDeclaration();
     }
     
+    // AI Compilation blocks
+    if (this.match(TokenType.AI_COMPILE)) {
+      return this.aiCompileBlock();
+    }
+    
+    // Directives
     if (this.match(TokenType.AI_DIRECTIVE)) {
       return this.aiDirective();
     }
@@ -183,7 +211,7 @@ export class Parser {
       const error = this.errorRecovery.addError(
         `Unexpected token '${token.value}' at top level`,
         token,
-        [TokenType.FUNCTION, TokenType.AI_DIRECTIVE],
+        [TokenType.FUNCTION, TokenType.COMPONENT, TokenType.APP, TokenType.IMPORT, TokenType.AI_DIRECTIVE],
         this.currentContext
       );
       this.parseErrors.push(error);
@@ -223,6 +251,10 @@ export class Parser {
             if (questionToken) {
               metadata.aiQuestions.push(questionToken.value);
             }
+          } else if (this.match(TokenType.AI_COMPILE)) {
+            // Handle inline AI compilation block
+            const aiBlock = this.aiCompileBlock();
+            body.push(aiBlock);
           } else if (this.match(TokenType.TEXT)) {
             body.push({
               type: 'NaturalLanguageExpression',
@@ -234,7 +266,7 @@ export class Parser {
             const error = this.errorRecovery.addError(
               `Unexpected token '${token.value}' in function body`,
               token,
-              [TokenType.TEXT, TokenType.AI_QUESTION, TokenType.CLOSE_BRACE],
+              [TokenType.TEXT, TokenType.AI_QUESTION, TokenType.AI_COMPILE, TokenType.CLOSE_BRACE],
               this.currentContext
             );
             this.parseErrors.push(error);
@@ -268,6 +300,8 @@ export class Parser {
     let value = '';
     
     if (this.check(TokenType.TEXT)) {
+      value = this.advance().value;
+    } else if (this.check(TokenType.STRING)) {
       value = this.advance().value;
     }
     
@@ -472,6 +506,14 @@ export class Parser {
           continue;
         }
         
+        if (this.match(TokenType.AI_COMPILE)) {
+          // Handle inline AI compilation block
+          const aiBlock = this.aiCompileBlock();
+          body.push(aiBlock);
+          this.skipNewlines();
+          continue;
+        }
+        
         if (this.match(TokenType.NEWLINE)) {
           continue;
         }
@@ -563,6 +605,372 @@ export class Parser {
       name,
       endpoints,
       metadata
+    } as any;
+  }
+
+  private importStatement(): ASTNode {
+    this.updateContext('import');
+    
+    const specifiers: any[] = [];
+    let source = '';
+    
+    try {
+      // Parse import specifier (e.g., ComponentName)
+      if (this.check(TokenType.IDENTIFIER)) {
+        const name = this.advance().value;
+        specifiers.push({
+          type: 'ImportDefaultSpecifier',
+          local: name
+        });
+      }
+      
+      // Check if we have 'from' keyword
+      if (this.check(TokenType.FROM)) {
+        this.advance();
+        
+        // Parse source path
+        if (this.check(TokenType.STRING)) {
+          source = this.advance().value;
+        } else if (this.check(TokenType.TEXT)) {
+          // Handle unquoted paths
+          source = this.advance().value;
+        }
+      } else {
+        // Handle cases where 'from' is part of another token
+        // Look for any remaining tokens on this line
+        while (!this.check(TokenType.NEWLINE) && !this.isAtEnd()) {
+          const token = this.advance();
+          if (token.type === TokenType.TEXT || token.type === TokenType.STRING) {
+            // Extract source from text like 'from "./path"'
+            const text = token.value;
+            const fromMatch = text.match(/from\s+["'](.+)["']/);
+            if (fromMatch) {
+              source = fromMatch[1];
+            } else if (text.startsWith('"') || text.startsWith("'")) {
+              source = text.replace(/["']/g, '');
+            }
+          }
+        }
+      }
+      
+    } catch (error) {
+      this.addError(`Error parsing import statement: ${(error as Error).message}`);
+    }
+    
+    return {
+      type: 'ImportStatement',
+      specifiers,
+      source
+    } as any;
+  }
+
+  private appDeclaration(): ASTNode {
+    this.updateContext('app');
+    
+    let name = 'unknown';
+    const body: any[] = [];
+    const metadata: any = {
+      title: '',
+      description: '',
+      pages: [],
+      routes: {},
+      config: {},
+      directives: [],
+      hasErrors: false
+    };
+    
+    try {
+      const nameToken = this.consumeWithRecovery(TokenType.IDENTIFIER, "Expected app name");
+      if (nameToken) {
+        name = nameToken.value;
+      }
+      
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after app name");
+      this.skipNewlines();
+      
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        this.skipNewlines();
+        
+        if (this.match(TokenType.COMPONENT)) {
+          // Parse inline component
+          const component = this.componentDeclaration();
+          body.push(component);
+        } else if (this.match(TokenType.STATE)) {
+          // Parse state block
+          const state = this.stateDeclaration();
+          body.push(state);
+        } else if (this.match(TokenType.ROUTES)) {
+          // Parse routes block
+          const routes = this.routesDeclaration();
+          metadata.routes = routes;
+        } else if (this.match(TokenType.STYLES)) {
+          // Parse styles block
+          const styles = this.stylesDeclaration();
+          body.push(styles);
+        } else if (this.match(TokenType.AI_COMPILE)) {
+          // Handle inline AI compilation block
+          const aiBlock = this.aiCompileBlock();
+          body.push(aiBlock);
+        } else if (this.match(TokenType.IDENTIFIER)) {
+          // Handle property assignments like title:, description:, etc.
+          const key = this.previous().value;
+          if (this.match(TokenType.COLON)) {
+            const value = this.parseValue();
+            metadata[key] = value;
+          }
+        } else if (this.match(TokenType.TEXT)) {
+          // Natural language content
+          body.push({
+            type: 'NaturalLanguageExpression',
+            text: this.previous().value
+          });
+        } else if (!this.match(TokenType.NEWLINE)) {
+          // Skip unknown token
+          this.advance();
+        }
+        
+        this.skipNewlines();
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after app body");
+      
+    } catch (error) {
+      metadata.hasErrors = true;
+      this.addError(`Error parsing app '${name}': ${(error as Error).message}`);
+    }
+    
+    return {
+      type: 'AppDeclaration',
+      name,
+      body,
+      metadata
+    } as any;
+  }
+
+  private stateDeclaration(): ASTNode {
+    this.updateContext('state');
+    
+    const properties: any[] = [];
+    
+    try {
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after 'state'");
+      this.skipNewlines();
+      
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        if (this.match(TokenType.IDENTIFIER)) {
+          const name = this.previous().value;
+          let type = 'any';
+          let initialValue = null;
+          
+          if (this.match(TokenType.COLON)) {
+            // Parse type
+            if (this.check(TokenType.IDENTIFIER)) {
+              type = this.advance().value;
+            }
+            
+            if (this.match(TokenType.EQUALS)) {
+              // Parse initial value
+              initialValue = this.parseValue();
+            }
+          }
+          
+          properties.push({ name, type, initialValue });
+        }
+        
+        this.skipNewlines();
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after state body");
+      
+    } catch (error) {
+      this.addError(`Error parsing state declaration: ${(error as Error).message}`);
+    }
+    
+    return {
+      type: 'StateDeclaration',
+      properties
+    } as any;
+  }
+
+  private routesDeclaration(): any {
+    this.updateContext('routes');
+    
+    const routes: any = {};
+    
+    try {
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after 'routes'");
+      this.skipNewlines();
+      
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        if (this.match(TokenType.STRING)) {
+          const path = this.previous().value;
+          
+          if (this.match(TokenType.COLON)) {
+            if (this.check(TokenType.IDENTIFIER)) {
+              // Route to component
+              routes[path] = { component: this.advance().value };
+            } else if (this.check(TokenType.TEXT)) {
+              // Parse route action or redirect
+              const value = this.advance().value;
+              if (value.startsWith('redirect(')) {
+                routes[path] = { redirect: value.slice(9, -1) };
+              } else if (value.startsWith('action(')) {
+                routes[path] = { action: value.slice(7, -1) };
+              }
+            }
+          }
+        }
+        
+        this.skipNewlines();
+        this.match(TokenType.COMMA); // Optional comma
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after routes body");
+      
+    } catch (error) {
+      this.addError(`Error parsing routes declaration: ${(error as Error).message}`);
+    }
+    
+    return routes;
+  }
+
+  private stylesDeclaration(): ASTNode {
+    this.updateContext('styles');
+    
+    const rules: any[] = [];
+    
+    try {
+      this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after 'styles'");
+      this.skipNewlines();
+      
+      // For now, treat styles as natural language content
+      // In a full implementation, we would parse CSS rules
+      const styleContent: string[] = [];
+      while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+        if (this.match(TokenType.TEXT) || this.match(TokenType.IDENTIFIER)) {
+          styleContent.push(this.previous().value);
+        } else if (!this.match(TokenType.NEWLINE)) {
+          this.advance();
+        }
+      }
+      
+      this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}' after styles body");
+      
+      return {
+        type: 'StylesDeclaration',
+        rules: [{
+          selector: 'body',
+          declarations: [{
+            property: 'content',
+            value: styleContent.join(' ')
+          }]
+        }]
+      } as any;
+      
+    } catch (error) {
+      this.addError(`Error parsing styles declaration: ${(error as Error).message}`);
+      return {
+        type: 'StylesDeclaration',
+        rules: []
+      } as any;
+    }
+  }
+
+  private parseValue(): any {
+    if (this.match(TokenType.STRING)) {
+      return this.previous().value;
+    }
+    if (this.match(TokenType.NUMBER)) {
+      return parseFloat(this.previous().value);
+    }
+    if (this.match(TokenType.IDENTIFIER)) {
+      const value = this.previous().value;
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      return value;
+    }
+    if (this.match(TokenType.OPEN_BRACKET)) {
+      // Parse array
+      const items: any[] = [];
+      while (!this.check(TokenType.CLOSE_BRACKET) && !this.isAtEnd()) {
+        if (this.match(TokenType.OPEN_BRACE)) {
+          // Parse object in array
+          const obj = this.parseObject();
+          items.push(obj);
+        } else {
+          items.push(this.parseValue());
+        }
+        this.match(TokenType.COMMA);
+        this.skipNewlines();
+      }
+      this.consumeWithRecovery(TokenType.CLOSE_BRACKET, "Expected ']'");
+      return items;
+    }
+    if (this.match(TokenType.OPEN_BRACE)) {
+      return this.parseObject();
+    }
+    return null;
+  }
+
+  private parseObject(): any {
+    const obj: any = {};
+    this.skipNewlines();
+    
+    while (!this.check(TokenType.CLOSE_BRACE) && !this.isAtEnd()) {
+      if (this.match(TokenType.IDENTIFIER)) {
+        const key = this.previous().value;
+        if (this.match(TokenType.COLON)) {
+          obj[key] = this.parseValue();
+        }
+      }
+      this.match(TokenType.COMMA);
+      this.skipNewlines();
+    }
+    
+    this.consumeWithRecovery(TokenType.CLOSE_BRACE, "Expected '}'");
+    return obj;
+  }
+  
+  private aiCompileBlock(): ASTNode {
+    this.updateContext('ai-compile');
+    
+    // Expect opening brace
+    this.consumeWithRecovery(TokenType.OPEN_BRACE, "Expected '{' after @ai");
+    this.skipNewlines();
+    
+    // Collect all content until closing brace as natural language description
+    const contentParts: string[] = [];
+    let braceDepth = 1;
+    
+    while (!this.isAtEnd() && braceDepth > 0) {
+      const token = this.peek();
+      
+      if (token.type === TokenType.OPEN_BRACE) {
+        braceDepth++;
+        contentParts.push(this.advance().value);
+      } else if (token.type === TokenType.CLOSE_BRACE) {
+        braceDepth--;
+        if (braceDepth > 0) {
+          contentParts.push(this.advance().value);
+        } else {
+          this.advance(); // Consume the closing brace
+        }
+      } else if (token.type === TokenType.NEWLINE) {
+        contentParts.push('\n');
+        this.advance();
+      } else {
+        // Any other token - add its value
+        contentParts.push(this.advance().value);
+      }
+    }
+    
+    const description = contentParts.join(' ').trim();
+    
+    return {
+      type: 'AICompileBlock',
+      description,
+      inline: true,
+      targetLanguage: 'auto' // Will be determined by context
     } as any;
   }
 }
