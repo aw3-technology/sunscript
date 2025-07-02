@@ -30,7 +30,7 @@ export class SecureTempFileManager {
 
   constructor() {
     this.validator = new FileSecurityValidator({
-      allowedExtensions: ['.tmp', '.temp', '.sun', '.js', '.ts', '.json', '.html', '.css'],
+      allowedExtensions: ['.tmp', '.temp', '.sun', '.js', '.ts', '.jsx', '.tsx', '.json', '.html', '.css', '.md', '.txt', '.yaml', '.yml', '.toml', '.xml', '.svg', '.py', '.java', '.cpp', '.c', '.h', '.hpp', '.go', '.rs', '.php', '.rb', '.sh', '.bat', '.ps1'], // Allow all common file extensions for temp files
       maxFileSize: 100 * 1024 * 1024, // 100MB for temp files
       allowSymlinks: false,
       allowHiddenFiles: true, // Temp files might be hidden
@@ -466,7 +466,29 @@ export class SecureTempFileManager {
   getTempFiles(): string[] {
     return Array.from(this.tempFiles.keys());
   }
+
+  // Static factory methods for different security profiles
+  static createPermissive(): SecureTempFileManager {
+    const manager = Object.create(SecureTempFileManager.prototype);
+    manager.tempFiles = new Map<string, TempFileInfo>();
+    manager.cleanupInterval = null;
+    manager.validator = new FileSecurityValidator({
+      allowedExtensions: [], // Allow all extensions for temp files
+      maxFileSize: 1024 * 1024 * 1024, // 1GB for temp files
+      allowSymlinks: false,
+      allowHiddenFiles: true,
+      scanForMaliciousContent: false,
+      blockedDirectories: ['/etc', '/usr', '/sys', '/proc', 'C:\\Windows', 'C:\\System32']
+    });
+    manager.startCleanupInterval();
+    manager.setupExitHandlers();
+    return manager;
+  }
+
+  static createStrict(): SecureTempFileManager {
+    return new SecureTempFileManager(); // Use default constructor for strict mode
+  }
 }
 
-// Global instance
-export const globalTempFileManager = new SecureTempFileManager();
+// Global instance - use permissive mode for general temp file operations
+export const globalTempFileManager = SecureTempFileManager.createPermissive();

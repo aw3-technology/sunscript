@@ -1,9 +1,10 @@
 import { AIProvider } from '../ai/AIProvider';
 import { GenesisProgram, CompilationResult, AIContext, TargetLanguage } from '../types';
 import { MultiPromptGenerator, ComponentGenerationPlan, GenerationContext } from './MultiPromptGenerator';
-import { secureFileOps } from '../security';
+import { outputFileOps } from '../security';
 import { globalLogger } from '../errors/Logger';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 
 export interface ProjectStructure {
   folders: FolderStructure[];
@@ -106,18 +107,8 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
       projectName: genesisProgram.projectName
     });
 
-    // Analyze the genesis program to determine optimal folder structure
-    const analysisPrompt = this.buildStructureAnalysisPrompt(genesisProgram);
-    const context: AIContext = {
-      targetLanguage: this.getTargetLanguage(genesisProgram) as TargetLanguage,
-      projectName: genesisProgram.projectName,
-      domain: 'project-planning'
-    };
-
-    const response = await this.getAIProvider().generateCode(analysisPrompt, context);
-    
-    // Parse the AI response to create project structure
-    // For now, create a default structure - in practice, you'd parse the AI response
+    // TODO: In the future, analyze the genesis program with AI to determine optimal folder structure
+    // For now, use a default structure based on target language
     const structure: ProjectStructure = {
       folders: this.generateDefaultFolderStructure(genesisProgram),
       files: [],
@@ -257,11 +248,38 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
       const folderPath = path.join(outputDir, folder.path);
       
       try {
-        await secureFileOps.writeFile(
-          path.join(folderPath, 'README.md'), 
-          `# ${folder.path}\n\n${folder.purpose}\n\nThis folder is part of the project structure.`,
-          { createDirectories: true }
-        );
+        // First ensure the directory exists
+        await fs.mkdir(folderPath, { recursive: true });
+        
+        // Try to create README.md with atomic write
+        try {
+          await outputFileOps.writeFile(
+            path.join(folderPath, 'README.md'), 
+            `# ${folder.path}\n\n${folder.purpose}\n\nThis folder is part of the project structure.`,
+            { createDirectories: true, atomic: true }
+          );
+        } catch (readmeError) {
+          // If README creation fails, try without atomic write as fallback
+          globalLogger.warn('README.md atomic write failed, trying fallback', {
+            path: folderPath,
+            error: (readmeError as Error).message
+          });
+          
+          try {
+            await outputFileOps.writeFile(
+              path.join(folderPath, 'README.md'), 
+              `# ${folder.path}\n\n${folder.purpose}\n\nThis folder is part of the project structure.`,
+              { createDirectories: true, atomic: false }
+            );
+          } catch (fallbackError) {
+            // If even fallback fails, just log it but don't fail the entire folder creation
+            globalLogger.warn('README.md creation failed completely, continuing without README', {
+              path: folderPath,
+              atomicError: (readmeError as Error).message,
+              fallbackError: (fallbackError as Error).message
+            });
+          }
+        }
         
         foldersCreated.push(folderPath);
         
@@ -273,6 +291,7 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
         globalLogger.error('Failed to create folder', error as Error, {
           path: folderPath
         });
+        // Don't throw here, continue with other folders
       }
     }
 
@@ -409,7 +428,7 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
 
       const response = await this.getAIProvider().generateCode(packageJsonPrompt, context);
       
-      await secureFileOps.writeFile(
+      await outputFileOps.writeFile(
         path.join(outputDir, 'package.json'),
         response.code,
         { createDirectories: true }
@@ -427,7 +446,7 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
 
       const response = await this.getAIProvider().generateCode(setupPyPrompt, context);
       
-      await secureFileOps.writeFile(
+      await outputFileOps.writeFile(
         path.join(outputDir, 'setup.py'),
         response.code,
         { createDirectories: true }
@@ -444,7 +463,7 @@ export class ProjectStructureGenerator extends MultiPromptGenerator {
 
     const readmeResponse = await this.getAIProvider().generateCode(readmePrompt, context);
     
-    await secureFileOps.writeFile(
+    await outputFileOps.writeFile(
       path.join(outputDir, 'README.md'),
       readmeResponse.code,
       { createDirectories: true }
