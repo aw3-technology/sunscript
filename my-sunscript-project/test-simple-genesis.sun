@@ -1,0 +1,11 @@
+@syntax flex
+@project "Simple Test Project"
+@version "1.0.0"
+@source "./src"
+@output "./dist/test-simple"
+
+# Simple test project
+A minimal test project for genesis validation
+
+# Just basic structure
+Create a simple hello world application

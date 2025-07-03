@@ -1,3 +1,4 @@
+@syntax flex
 @project "Hello World Project"
 @version "1.0.0"
 @author "SunScript Team"

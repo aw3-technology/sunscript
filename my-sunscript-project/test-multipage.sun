@@ -1,0 +1,46 @@
+@project "test-multipage-app"
+@version "1.0.0"
+@author "Test"
+@source "./test-src"
+@output "./test-output"
+@syntax standard
+
+import LoginForm from "./components/LoginForm.sun"
+import Dashboard from "./components/Dashboard.sun"
+import UserProfile from "./components/UserProfile.sun"
+
+app TestMultiPageApp {
+  title: "Test Multi-Page Application"
+  description: "A test application with multiple pages to verify multi-page compilation"
+  
+  pages: [
+    {
+      path: "/login",
+      component: LoginForm,
+      title: "Login Page"
+    },
+    {
+      path: "/dashboard",
+      component: Dashboard,
+      title: "Dashboard",
+      protected: true
+    },
+    {
+      path: "/profile",
+      component: UserProfile,
+      title: "User Profile",
+      protected: true
+    }
+  ]
+  
+  routes: {
+    "/": redirect("/login"),
+    "/logout": action("logout")
+  }
+  
+  config: {
+    theme: "dark",
+    language: "en",
+    apiUrl: "https://api.example.com"
+  }
+}

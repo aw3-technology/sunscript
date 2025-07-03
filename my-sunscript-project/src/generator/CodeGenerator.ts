@@ -169,85 +169,30 @@ Return ONLY the complete function code with no explanations.`;
   private async generateHTMLPage(ast: Program, context: AIContext, validator: Validator): Promise<{ code: string; warnings: any[] }> {
     const warnings: any[] = [];
     
-    // Check if this is flex syntax
-    const hasFlexSyntax = ast.metadata.syntaxMode === 'flex' || 
-      ast.body.some((node: any) => node.metadata?.flexSyntax);
+    // Build a simple, focused prompt for HTML generation
+    let prompt = `Generate a complete HTML page that implements the following functionality. Return ONLY the HTML code starting with <!DOCTYPE html> and ending with </html>. Include embedded CSS and JavaScript.`;
     
-    // Build a comprehensive prompt for HTML generation
-    let prompt = '';
-    
-    if (hasFlexSyntax) {
-      prompt = `Generate a complete HTML web application based on this natural language description:
-
-`;
-      
-      // Extract all natural language content
-      for (const node of ast.body) {
-        if (node.type === 'FunctionDeclaration') {
-          const funcNode = node as any;
-          for (const expr of funcNode.body) {
-            if (expr.type === 'NaturalLanguageExpression') {
-              prompt += expr.text + '\n';
-            }
+    // Extract requirements from the AST
+    for (const node of ast.body) {
+      if (node.type === 'FunctionDeclaration') {
+        const funcNode = node as any;
+        prompt += `\n\nFunction "${funcNode.name}":\n`;
+        
+        for (const expr of funcNode.body) {
+          if (expr.type === 'NaturalLanguageExpression') {
+            prompt += `- ${expr.text}\n`;
           }
-        }
-      }
-      
-      prompt += `
-IMPORTANT: This is a free-form natural language specification. Interpret the intent and create a complete, working HTML application.
-`;
-    } else {
-      prompt = `Generate a complete HTML page that implements the following functionality. 
-IMPORTANT: Return ONLY the HTML code starting with <!DOCTYPE html> and ending with </html>. 
-Do not include any explanations, comments outside the code, or markdown formatting.
-
-Requirements:\n\n`;
-      
-      for (const node of ast.body) {
-        if (node.type === 'FunctionDeclaration') {
-          const funcNode = node as any;
-          prompt += `Function "${funcNode.name}":\n`;
-          
-          for (const expr of funcNode.body) {
-            if (expr.type === 'NaturalLanguageExpression') {
-              prompt += `- ${expr.text}\n`;
-            }
-          }
-          
-          if (funcNode.metadata.aiQuestions && funcNode.metadata.aiQuestions.length > 0) {
-            prompt += 'Additional considerations:\n';
-            for (const question of funcNode.metadata.aiQuestions) {
-              prompt += `- ${question}\n`;
-            }
-          }
-          prompt += '\n';
         }
       }
     }
     
-    prompt += `
-Create a modern, responsive HTML page that:
-1. Has a beautiful, professional design with embedded CSS
-2. Implements all the functions with proper UI elements (buttons, forms, etc.)
-3. Includes smooth animations and transitions
-4. Is fully responsive and works on mobile devices
-5. Has proper accessibility features
-6. Shows the results in an elegant way on the page (not just console.log)
-7. Uses embedded <script> tags for JavaScript functionality
-8. Uses embedded <style> tags for CSS styling
-
-CRITICAL REQUIREMENTS:
-- Output MUST be a complete, working HTML document
-- Start with <!DOCTYPE html> and end with </html>
-- Include complete CSS in <style> tags
-- Include complete JavaScript in <script> tags with NO syntax errors
-- Ensure all functions, event handlers, and animations are fully implemented
-- Do NOT truncate any code - the output must be production-ready
-
-Output only the complete HTML code, starting with <!DOCTYPE html>.`;
+    prompt += `\n\nCreate a modern, responsive HTML page with embedded CSS and JavaScript. Make it functional and visually appealing.`;
 
     try {
-      const response = await this.aiProvider.generateCode(prompt, context);
+      const response = await this.aiProvider.generateCode(prompt, context, {
+        maxTokens: 4000,
+        temperature: 0.7
+      });
       const cleanedCode = this.cleanGeneratedCode(response.code);
       
       // Validate the HTML
@@ -432,14 +377,14 @@ function ${functionName}() {
       node.type === 'APIDeclaration'
     );
     const isComplexLanguage = ['typescript', 'javascript', 'python'].includes(context.targetLanguage);
-    const hasMultipleFiles = componentCount > 2;
-    const isLargeApp = this.estimateCodeComplexity(ast) > 1000; // Rough estimation
+    const hasMultipleFiles = componentCount > 5; // Increased threshold from 2 to 5
+    const isLargeApp = this.estimateCodeComplexity(ast) > 3000; // Increased threshold from 1000 to 3000
 
     // Use multi-prompt for:
-    // 1. Multiple components/APIs
-    // 2. Complex applications (estimated > 1000 lines)
-    // 3. Non-HTML languages with multiple functions
-    return (hasComponents && componentCount > 1) || 
+    // 1. Multiple components/APIs (more than 3)
+    // 2. Very complex applications (estimated > 3000 lines)
+    // 3. Non-HTML languages with many functions
+    return (hasComponents && componentCount > 3) || 
            (isComplexLanguage && hasMultipleFiles) || 
            isLargeApp;
   }

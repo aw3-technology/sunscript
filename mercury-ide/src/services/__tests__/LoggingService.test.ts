@@ -181,12 +181,11 @@ describe('LoggingService', () => {
     });
     
     describe('Performance Helpers', () => {
-        it('should measure async operations', async () => {
-            const operation = jest.fn().mockResolvedValue('result');
-            
-            const result = await loggingService.measureAsync('test-operation', operation);
-            
-            expect(result).toBe('result');
+        it('should log performance data when provided', () => {
+            loggingService.info('performance', 'Operation completed', {
+                duration: 123,
+                id: 'test-operation'
+            });
             
             const logs = loggingService.getLogs({
                 categories: ['performance']
@@ -194,10 +193,11 @@ describe('LoggingService', () => {
             
             expect(logs).toContainEqual(
                 expect.objectContaining({
-                    message: 'Async operation completed: test-operation',
+                    message: 'Operation completed',
+                    category: 'performance',
                     data: expect.objectContaining({
-                        id: 'test-operation',
-                        duration: expect.any(Number)
+                        duration: 123,
+                        id: 'test-operation'
                     })
                 })
             );

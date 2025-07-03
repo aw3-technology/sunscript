@@ -6,13 +6,10 @@
 @output "./dist/ecommerce-project"
 
 # Project Description
-A comprehensive e-commerce platform with product catalog, shopping cart, user authentication, and order management
+A comprehensive e-commerce platform
 
 # Project Structure  
 imports {
     ProductCatalog.sun as ProductCatalog
     ShoppingCart.sun as ShoppingCart
-    UserAuth.sun as UserAuth
-    EmailService.sun as EmailService
-    ProductAPI.sun as ProductAPI
 }

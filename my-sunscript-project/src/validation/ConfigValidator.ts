@@ -49,7 +49,14 @@ export class ConfigValidator {
             name: 'filePath', 
             validator: (value: string) => {
               if (typeof value !== 'string') return false;
-              // Basic path validation - check for dangerous patterns
+              // For outputDir, we need to allow absolute paths
+              // Check if this is an outputDir validation by examining the message
+              if (message === 'Invalid output directory path') {
+                // Less restrictive validation for output directories - allow absolute paths
+                const dangerousPatterns = [/\0/, /\x00/];
+                return !dangerousPatterns.some(pattern => pattern.test(value));
+              }
+              // Original strict validation for other file paths
               const dangerousPatterns = [/\.\.\//, /\/\.\./,  /\0/, /\x00/];
               return !dangerousPatterns.some(pattern => pattern.test(value));
             }, 
@@ -118,8 +125,8 @@ export class ConfigValidator {
       
       outputDir: [
         ConfigValidator.rules.required('Output directory is required'),
-        ConfigValidator.rules.string('Output directory must be a string'),
-        ConfigValidator.rules.filePath('Invalid output directory path')
+        ConfigValidator.rules.string('Output directory must be a string')
+        // Note: Removed filePath validation for outputDir to allow absolute paths
       ],
       
       aiProvider: [
@@ -441,10 +448,16 @@ export class ConfigValidator {
   /**
    * Create a safe version of config for logging (removes sensitive data)
    */
-  private static sanitizeConfigForLogging(config: any): any {
+  private static sanitizeConfigForLogging(config: any, visited: Set<any> = new Set()): any {
     if (!config || typeof config !== 'object') {
       return config;
     }
+
+    // Prevent infinite recursion with circular references
+    if (visited.has(config)) {
+      return '[Circular Reference]';
+    }
+    visited.add(config);
 
     const sanitized = { ...config };
     
@@ -460,10 +473,11 @@ export class ConfigValidator {
     // Recursively sanitize nested objects
     for (const [key, value] of Object.entries(sanitized)) {
       if (value && typeof value === 'object') {
-        sanitized[key] = ConfigValidator.sanitizeConfigForLogging(value);
+        sanitized[key] = ConfigValidator.sanitizeConfigForLogging(value, visited);
       }
     }
 
+    visited.delete(config);
     return sanitized;
   }
 

@@ -13,7 +13,8 @@ module.exports = {
     },
     moduleNameMapper: {
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-        '^@/(.*)$': '<rootDir>/src/$1'
+        '^@/(.*)$': '<rootDir>/src/$1',
+        'monaco-editor': '<rootDir>/src/mocks/monaco-editor.ts'
     },
     setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
     collectCoverageFrom: [

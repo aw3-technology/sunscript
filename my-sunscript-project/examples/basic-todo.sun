@@ -1,0 +1,4 @@
+@syntax flex
+@targets html
+
+Build a basic todo app with just add and list functionality

@@ -1,4 +1,5 @@
 @context simple
+@targets html
 
 function greetUser {
     ask user for their name

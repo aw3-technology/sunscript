@@ -1,0 +1,9 @@
+@syntax flex
+
+Create a simple todo list app with:
+- Add new todos
+- Mark todos as complete
+- Display all todos
+- Delete todos
+
+Keep it minimal and functional

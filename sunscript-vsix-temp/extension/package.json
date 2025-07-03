@@ -1,0 +1,39 @@
+{
+  "name": "sunscript",
+  "displayName": "SunScript",
+  "publisher": "AW3Technology",
+  "description": "SunScript language support for VS Code, including syntax highlighting, bracket matching, and auto-formatting for .sun files. Ideal for AI-powered and web application development.",
+  "version": "0.0.1",
+  "icon": "logo.png",
+  "engines": {
+    "vscode": ">=1.96.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Themes"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourname/sunscript-vscode-extension"
+  },
+  "contributes": {
+    "languages": [{
+      "id": "sunscript",
+      "aliases": ["SunScript", "sunscript"],
+      "extensions": [".sun"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "sunscript",
+      "scopeName": "source.sunscript",
+      "path": "./syntaxes/sunscript.tmLanguage.json"
+    }],
+    "iconThemes": [{
+        "id": "sunscript-theme",
+        "label": "SunScript File Icons",
+        "path": "./fileicons/sunscript-icon-theme.json",
+        "icon": "./sunscript-icon.svg"
+
+    }]
+  }
+}

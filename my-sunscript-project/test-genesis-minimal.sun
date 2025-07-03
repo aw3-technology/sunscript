@@ -1,0 +1,7 @@
+@syntax flex
+@project "Test Project"
+@version "1.0.0"
+@output "./dist/test"
+
+# Simple test project
+A basic test to validate genesis parsing

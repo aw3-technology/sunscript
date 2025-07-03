@@ -1,0 +1,4 @@
+function testAnthropicProvider {
+  Create a simple function that returns the string "Anthropic is working!" 
+  Add a timestamp to show when it was generated.
+}

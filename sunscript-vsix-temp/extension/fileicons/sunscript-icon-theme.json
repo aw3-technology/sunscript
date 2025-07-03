@@ -1,0 +1,20 @@
+{
+  "iconDefinitions": {
+    "file_type_sunscript": {
+      "iconPath": "./sunscript-icon.png"
+    }
+  },
+  "file": "file_type_default", 
+  "folder": "folder_default",
+  "folderExpanded": "folder_expanded_default",
+  "fileExtensions": {
+    "sun": "file_type_sunscript"
+  },
+  "fileNames": {
+    "SunScript.config": "file_type_sunscript"
+  },
+  "languageIds": {
+    "sunscript": "file_type_sunscript"
+  },
+  "extends": "vs-seti"
+}

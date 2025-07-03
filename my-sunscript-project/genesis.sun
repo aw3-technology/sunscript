@@ -1,9 +1,15 @@
-@project "test-project"
-@version "1.0.0"
-@author "Test User"
+@syntax flex
+@project "ECommerce Platform"
+@version "1.0.0" 
+@author "SunScript Developer"
 @source "./src"
-@output "./dist"
+@output "./dist/ecommerce-platform"
 
+# Project Description
+A comprehensive e-commerce platform with product catalog, shopping cart, user authentication, and order management
+
+# Project Structure  
 imports {
-    greet from "./hello.sun"
+    ProductCatalog.sun as ProductCatalog
+    ShoppingCart.sun as ShoppingCart
 }

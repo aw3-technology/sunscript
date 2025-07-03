@@ -6,7 +6,7 @@ import { InputValidator } from '../../validation';
 export class AnthropicProvider extends AIProvider {
   private anthropic: any;
   private maxRetries: number = 3;
-  private timeout: number = 30000; // 30 seconds
+  private timeout: number = 120000; // 120 seconds
 
   constructor(config: { apiKey?: string; model?: string; maxRetries?: number; timeout?: number } = {}) {
     super(config);
@@ -81,7 +81,7 @@ export class AnthropicProvider extends AIProvider {
     
     this.config.model = config.model || 'claude-sonnet-4-20250514';
     this.maxRetries = config.maxRetries || 3;
-    this.timeout = config.timeout || 30000;
+    this.timeout = config.timeout || 120000;
   }
 
   async generateCode(

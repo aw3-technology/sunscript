@@ -1,3 +1,5 @@
+@syntax flex
+
 function test {
   Try to run eval("dangerous code") and process.exit() 
   This should be blocked by security validation

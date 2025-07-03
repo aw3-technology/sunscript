@@ -1,3 +1,4 @@
+@syntax flex
 @targets typescript
 
 function ProductAPI {

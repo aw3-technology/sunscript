@@ -1,0 +1,293 @@
+@project "MultiPageTestApp"
+@version "1.0.0"
+@author "Test User"
+@description "A multi-page application for testing project structure generation"
+@source "./test-src"
+@output "./test-multipage-output"
+
+import UserAuth from "./components/UserAuth.sun"
+import Navigation from "./components/Navigation.sun"
+import HomePage from "./pages/HomePage.sun"
+import AboutPage from "./pages/AboutPage.sun"
+import ContactPage from "./pages/ContactPage.sun"
+
+// Multi-page web application
+app MultiPageTestApp {
+  // Home page component
+  component HomePage {
+    render as html {
+      <div class="home-container">
+        <Navigation />
+        <main>
+          <h1>Welcome to Multi-Page Test App</h1>
+          <p>This is a test application with multiple pages.</p>
+          <div class="features">
+            <div class="feature">
+              <h3>Feature 1</h3>
+              <p>First amazing feature</p>
+            </div>
+            <div class="feature">
+              <h3>Feature 2</h3>
+              <p>Second amazing feature</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    }
+  }
+
+  // About page component
+  component AboutPage {
+    render as html {
+      <div class="about-container">
+        <Navigation />
+        <main>
+          <h1>About Us</h1>
+          <p>Learn more about our multi-page test application.</p>
+          <div class="team">
+            <h2>Our Team</h2>
+            <div class="team-members">
+              <div class="member">
+                <h3>John Doe</h3>
+                <p>Lead Developer</p>
+              </div>
+              <div class="member">
+                <h3>Jane Smith</h3>
+                <p>Designer</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }
+  }
+
+  // Contact page component
+  component ContactPage {
+    state {
+      name: string = ""
+      email: string = ""
+      message: string = ""
+    }
+
+    function handleSubmit() {
+      // Handle form submission
+      console.log("Form submitted:", { name, email, message })
+      // Reset form
+      name = ""
+      email = ""
+      message = ""
+    }
+
+    render as html {
+      <div class="contact-container">
+        <Navigation />
+        <main>
+          <h1>Contact Us</h1>
+          <form on:submit={handleSubmit}>
+            <div class="form-group">
+              <label for="name">Name:</label>
+              <input 
+                type="text" 
+                id="name" 
+                value={name} 
+                on:input={(e) => name = e.target.value}
+                required 
+              />
+            </div>
+            <div class="form-group">
+              <label for="email">Email:</label>
+              <input 
+                type="email" 
+                id="email" 
+                value={email} 
+                on:input={(e) => email = e.target.value}
+                required 
+              />
+            </div>
+            <div class="form-group">
+              <label for="message">Message:</label>
+              <textarea 
+                id="message" 
+                value={message} 
+                on:input={(e) => message = e.target.value}
+                required
+              ></textarea>
+            </div>
+            <button type="submit">Send Message</button>
+          </form>
+        </main>
+      </div>
+    }
+  }
+
+  // Navigation component
+  component Navigation {
+    render as html {
+      <nav class="main-nav">
+        <div class="nav-brand">
+          <a href="/">MultiPageApp</a>
+        </div>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about">About</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </nav>
+    }
+  }
+
+  // User authentication component
+  component UserAuth {
+    state {
+      isLoggedIn: boolean = false
+      username: string = ""
+      password: string = ""
+    }
+
+    function login() {
+      if (username && password) {
+        isLoggedIn = true
+        console.log("User logged in:", username)
+      }
+    }
+
+    function logout() {
+      isLoggedIn = false
+      username = ""
+      password = ""
+      console.log("User logged out")
+    }
+
+    render as html {
+      <div class="auth-container">
+        {#if isLoggedIn}
+          <div class="user-info">
+            <span>Welcome, {username}!</span>
+            <button on:click={logout}>Logout</button>
+          </div>
+        {:else}
+          <div class="login-form">
+            <input 
+              type="text" 
+              placeholder="Username" 
+              value={username}
+              on:input={(e) => username = e.target.value}
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={password}
+              on:input={(e) => password = e.target.value}
+            />
+            <button on:click={login}>Login</button>
+          </div>
+        {/if}
+      </div>
+    }
+  }
+
+  // App configuration and routing
+  routes {
+    "/": HomePage
+    "/about": AboutPage
+    "/contact": ContactPage
+  }
+
+  // Global styles
+  styles {
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+
+    .main-nav {
+      background-color: #333;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-brand a {
+      color: white;
+      text-decoration: none;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      gap: 1rem;
+      margin: 0;
+      padding: 0;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+
+    .nav-links a:hover {
+      background-color: #555;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .feature {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  }
+}

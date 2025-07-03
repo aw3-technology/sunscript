@@ -1,0 +1,18 @@
+@syntax flex
+@project "Todo Application"
+@version "1.0.0" 
+@author "SunScript Example"
+@source "./src"
+@output "./dist/todo-app-generated"
+
+# Project Description
+A modern todo application with task management, categories, and user authentication built with TypeScript and React
+
+# Project Structure
+Create a simple todo application with the following features:
+- Add new tasks with titles and descriptions
+- Mark tasks as complete or incomplete
+- Delete tasks
+- Filter tasks by status (all, active, completed)
+- Clean and modern user interface
+- Local storage persistence

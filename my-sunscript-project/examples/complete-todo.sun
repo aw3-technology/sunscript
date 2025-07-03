@@ -1,0 +1,15 @@
+@syntax flex
+
+function addTodo(text) {
+    Add a new todo item to the list
+}
+
+function markComplete(id) {
+    Mark a todo item as completed
+}
+
+function displayTodos() {
+    Show all todo items
+}
+
+Create a working todo app with these functions

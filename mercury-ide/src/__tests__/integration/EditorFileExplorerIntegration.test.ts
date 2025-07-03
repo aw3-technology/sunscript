@@ -107,7 +107,7 @@ describe('Editor-FileExplorer Integration', () => {
         mockFileSystemService = {
             getFiles: jest.fn().mockResolvedValue(testFiles),
             loadFile: jest.fn().mockImplementation((path: string) => 
-                Promise.resolve(testFileContents[path] || '// Default content')
+                Promise.resolve((testFileContents as any)[path] || '// Default content')
             ),
             saveFile: jest.fn().mockResolvedValue(undefined),
             fileExists: jest.fn().mockResolvedValue(true)
