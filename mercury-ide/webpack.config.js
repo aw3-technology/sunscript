@@ -39,17 +39,18 @@ module.exports = {
       // Mock MongoDB for browser
       'mongodb': path.resolve(__dirname, 'src/mocks/mongodb.ts'),
       'mongoose': path.resolve(__dirname, 'src/mocks/mongoose.ts'),
+      // Mock Node.js modules for browser
+      'fs/promises': path.resolve(__dirname, 'src/mocks/fs-promises.ts'),
+      'child_process': path.resolve(__dirname, 'src/mocks/child_process.ts'),
     },
     fallback: {
       // Node.js core modules polyfills
       "crypto": require.resolve("crypto-browserify"),
       "stream": require.resolve("stream-browserify"),
-      "path": require.resolve("path-browserify"),
+      "path": path.resolve(__dirname, 'src/mocks/path.ts'),
       "os": require.resolve("os-browserify/browser"),
-      "util": require.resolve("util/"),
-      "fs": false,
-      "fs/promises": false,
-      "child_process": false,
+      "util": path.resolve(__dirname, 'src/mocks/util.ts'),
+      "fs": path.resolve(__dirname, 'src/mocks/fs.ts'),
       "net": false,
       "tls": false,
       "dns": false,
