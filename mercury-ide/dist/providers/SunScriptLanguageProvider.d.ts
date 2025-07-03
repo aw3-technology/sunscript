@@ -1,0 +1,32 @@
+import { FileSystemService } from '../services/FileSystemService';
+export declare class SunScriptLanguageProvider {
+    private fileSystemService;
+    constructor(fileSystemService: FileSystemService);
+    register(): void;
+    private provideHover;
+    private getSunScriptHoverInfo;
+    private provideDefinition;
+    private provideReferences;
+    private provideRenameEdits;
+    private resolveRenameLocation;
+    private provideCodeActions;
+    private provideDocumentFormattingEdits;
+    private provideDocumentRangeFormattingEdits;
+    private formatSunScript;
+    private provideCompletionItems;
+    private resolveCompletionItem;
+    private addDecoratorCompletions;
+    private addPropertyCompletions;
+    private addImportCompletions;
+    private addKeywordCompletions;
+    private addSnippetCompletions;
+    private addFunctionBodyCompletions;
+    private addComponentCompletions;
+    private provideSignatureHelp;
+    private getFunctionSignatures;
+    private provideInlayHints;
+    private inferType;
+    private isInFunction;
+    private isInComponent;
+    private provideDocumentSymbols;
+}

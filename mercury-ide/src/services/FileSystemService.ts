@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Stats } from 'fs';
+import type { Stats } from 'fs';
 
 export interface FileItem {
     name: string;

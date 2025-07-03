@@ -1,0 +1,36 @@
+import { Editor } from './Editor';
+import { FileExplorer } from './FileExplorer';
+import { OutputPanel } from './OutputPanel';
+import { Toolbar } from './Toolbar';
+import { FileSystemService } from '../services/FileSystemService';
+import { SunScriptCompilerService } from '../services/SunScriptCompilerService';
+import { EventBus } from '../core/event-bus';
+import { CommandRegistry } from '../core/command-registry';
+import { CommandPalette } from './CommandPalette';
+import { QuickOpen } from './QuickOpen';
+import { AIChatPanel } from './AIChatPanel';
+import { AIConfigDialog } from './AIConfigDialog';
+export declare class App {
+    private editor;
+    private fileExplorer;
+    private outputPanel;
+    private toolbar;
+    private fileSystemService;
+    private compilerService;
+    private eventBus;
+    private commandRegistry;
+    private commandPalette;
+    private quickOpen;
+    private aiChatPanel;
+    private aiConfigDialog;
+    private rootElement;
+    constructor(editor: Editor, fileExplorer: FileExplorer, outputPanel: OutputPanel, toolbar: Toolbar, fileSystemService: FileSystemService, compilerService: SunScriptCompilerService, eventBus: EventBus, commandRegistry: CommandRegistry, commandPalette: CommandPalette, quickOpen: QuickOpen, aiChatPanel: AIChatPanel, aiConfigDialog: AIConfigDialog);
+    mount(rootElement: HTMLElement): void;
+    private render;
+    private setupEventListeners;
+    private handleRun;
+    private handleBuild;
+    private handleNewFile;
+    private handleOpenFile;
+    private handleSaveFile;
+}
