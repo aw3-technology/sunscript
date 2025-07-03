@@ -1,14 +1,15 @@
 import 'reflect-metadata';
 import './styles/globals.css';
-import { container } from './core/inversify.config';
+/* Temporarily disable main.css to prevent conflicts */
+/* import './styles/main.css'; */
+import { container } from './core/inversify.client.config';
 import { TYPES } from './core/types';
 import { App } from './components/App';
 import { ContributionLoader } from './core/contribution-loader';
 import { SunScriptLanguageProvider } from './providers/SunScriptLanguageProvider';
 import { TextMateService } from './services/TextMateService';
 import { DiagnosticsService } from './services/DiagnosticsService';
-import { DatabaseService } from './services/DatabaseService';
-import { IDEService } from './services/IDEService';
+import { ClientIDEService } from './services/ClientIDEService';
 
 class SunScriptIDE {
     private app!: App;
@@ -20,12 +21,6 @@ class SunScriptIDE {
     
     private async initializeServices(): Promise<void> {
         try {
-            // Initialize database connection first
-            const databaseService = container.get<DatabaseService>(TYPES.DatabaseService);
-            await databaseService.connect();
-            await databaseService.createIndexes();
-            console.log('Database connected and indexes created');
-            
             // Initialize TextMate service
             const textMateService = container.get<TextMateService>(TYPES.TextMateService);
             await textMateService.initialize();
@@ -33,8 +28,9 @@ class SunScriptIDE {
             // Initialize diagnostics service
             const diagnosticsService = container.get<DiagnosticsService>(TYPES.DiagnosticsService);
             
-            // Initialize IDE service (this coordinates all other services)
-            const ideService = container.get<IDEService>(TYPES.IDEService);
+            // Initialize IDE service (client-side only)
+            const ideService = container.get<ClientIDEService>(TYPES.IDEService);
+            await ideService.initialize();
             console.log('IDE service initialized with compiler:', ideService.getCompilerInfo());
             
             // Initialize language provider

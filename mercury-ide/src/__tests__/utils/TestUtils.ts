@@ -351,23 +351,23 @@ export class TestUtils {
         
         return {
             start: () => {
-                if (performance.memory) {
-                    initialMemory = performance.memory.usedJSHeapSize;
+                if ((performance as any).memory) {
+                    initialMemory = (performance as any).memory.usedJSHeapSize;
                 }
             },
             measure: () => {
-                if (performance.memory) {
+                if ((performance as any).memory) {
                     return {
-                        used: performance.memory.usedJSHeapSize,
-                        total: performance.memory.totalJSHeapSize,
-                        limit: performance.memory.jsHeapSizeLimit
+                        used: (performance as any).memory.usedJSHeapSize,
+                        total: (performance as any).memory.totalJSHeapSize,
+                        limit: (performance as any).memory.jsHeapSizeLimit
                     };
                 }
                 return { used: 0, total: 0, limit: 0 };
             },
             assertNoLeaks: (tolerance: number = 1000000) => { // 1MB tolerance
-                if (performance.memory) {
-                    const currentMemory = performance.memory.usedJSHeapSize;
+                if ((performance as any).memory) {
+                    const currentMemory = (performance as any).memory.usedJSHeapSize;
                     const increase = currentMemory - initialMemory;
                     
                     if (increase > tolerance) {
@@ -385,59 +385,61 @@ export class TestUtils {
 /**
  * Test fixtures for common testing scenarios
  */
+const sampleSunScriptCode = {
+    simple: `
+        @task hello() {
+            console.log("Hello, World!");
+        }
+    `,
+    component: `
+        @component Button {
+            state: {
+                text: "Click me",
+                disabled: false
+            }
+            
+            @task click() {
+                console.log("Button clicked!");
+            }
+            
+            @task disable() {
+                this.state.disabled = true;
+            }
+        }
+    `,
+    project: `
+        @project MyApp {
+            name: "My Application"
+            version: "1.0.0"
+            
+            components: [
+                "./components/App.sun",
+                "./components/Header.sun",
+                "./components/Footer.sun"
+            ]
+            
+            @task start() {
+                console.log("Starting application...");
+            }
+        }
+    `,
+    withErrors: `
+        @component BrokenComponent {
+            state: {
+                // Missing closing brace
+            
+            @task brokenTask(
+                // Missing parameters and body
+        }
+    `
+};
+
 export const TestFixtures = {
-    sampleSunScriptCode: {
-        simple: `
-            @task hello() {
-                console.log("Hello, World!");
-            }
-        `,
-        component: `
-            @component Button {
-                state: {
-                    text: "Click me",
-                    disabled: false
-                }
-                
-                @task click() {
-                    console.log("Button clicked!");
-                }
-                
-                @task disable() {
-                    this.state.disabled = true;
-                }
-            }
-        `,
-        project: `
-            @project MyApp {
-                name: "My Application"
-                version: "1.0.0"
-                
-                components: [
-                    "./components/App.sun",
-                    "./components/Header.sun",
-                    "./components/Footer.sun"
-                ]
-                
-                @task start() {
-                    console.log("Starting application...");
-                }
-            }
-        `,
-        withErrors: `
-            @component BrokenComponent {
-                state: {
-                    // Missing closing brace
-                
-                @task brokenTask(
-                    // Missing parameters and body
-            }
-        `
-    },
+    sampleSunScriptCode,
     
     sampleFileStructure: {
-        'genesis.sun': TestFixtures.sampleSunScriptCode?.project || '',
-        'components/App.sun': TestFixtures.sampleSunScriptCode?.component || '',
+        'genesis.sun': sampleSunScriptCode.project,
+        'components/App.sun': sampleSunScriptCode.component,
         'components/Header.sun': `
             @component Header {
                 @task render() {

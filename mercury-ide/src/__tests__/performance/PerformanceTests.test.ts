@@ -65,7 +65,7 @@ describe('Mercury IDE Performance Tests', () => {
         
         it('should list directory contents quickly', async () => {
             const { result, duration } = await TestUtils.measurePerformance(() =>
-                fileSystemService.getFiles('/test')
+                fileSystemService.getFiles()
             );
             
             expect(Array.isArray(result)).toBe(true);
@@ -382,7 +382,7 @@ describe('Mercury IDE Performance Tests', () => {
                 const { duration } = await TestUtils.measurePerformance(async () => {
                     // Save all files
                     for (const [fileName, content] of Object.entries(testData)) {
-                        await fileSystemService.saveFile(`/test/${size}/${fileName}`, content);
+                        await fileSystemService.saveFile(`/test/${size}/${fileName}`, content as string);
                     }
                     
                     // Build project

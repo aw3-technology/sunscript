@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom/client';
 import { injectable, inject } from 'inversify';
 import { TYPES } from '../core/types';
 import { Editor } from './Editor';
@@ -26,7 +27,11 @@ import {
   Search,
   GitBranch,
   Bug,
-  MessageSquare
+  MessageSquare,
+  File,
+  FolderOpen,
+  Save,
+  Package
 } from 'lucide-react';
 
 interface AppProps {
@@ -61,18 +66,76 @@ const AppComponent: React.FC<AppProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const fileExplorerRef = useRef<HTMLDivElement>(null);
   const outputPanelRef = useRef<HTMLDivElement>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
+  const aiChatRef = useRef<HTMLDivElement>(null);
+
+  // Toolbar action handlers
+  const handleNewFile = () => {
+    editor.newFile();
+  };
+
+  const handleOpenFile = () => {
+    // TODO: Implement file picker
+    console.log('Open file clicked');
+  };
+
+  const handleSaveFile = () => {
+    const content = editor.getValue();
+    const filename = editor.getCurrentFileName();
+    fileSystemService.saveFile(filename, content);
+    console.log(`Saved ${filename}`);
+  };
+
+  const handleRun = async () => {
+    const code = editor.getValue();
+    console.log('Running SunScript code...');
+    try {
+      const result = await compilerService.run(code);
+      console.log('Run result:', result);
+    } catch (error) {
+      console.error('Run failed:', error);
+    }
+  };
+
+  const handleBuild = async () => {
+    const code = editor.getValue();
+    console.log('Building SunScript project...');
+    try {
+      const result = await compilerService.build(code);
+      console.log('Build result:', result);
+    } catch (error) {
+      console.error('Build failed:', error);
+    }
+  };
 
   useEffect(() => {
-    // Initialize components when refs are available
-    if (editorRef.current) {
-      editor.initialize();
-    }
-    
-    // Mount overlay components
-    commandPalette.mount(document.body);
-    quickOpen.mount(document.body);
-    aiConfigDialog.mount(document.body);
+    // Use setTimeout to ensure DOM is fully rendered
+    const timer = setTimeout(() => {
+      // Initialize and mount components when refs are available
+      if (editorRef.current) {
+        editor.initialize();
+        editor.mount(editorRef.current);
+      }
+      
+      if (fileExplorerRef.current) {
+        fileExplorer.mount(fileExplorerRef.current);
+      }
+      
+      if (outputPanelRef.current) {
+        outputPanel.mount(outputPanelRef.current);
+      }
+      
+      // Toolbar is now handled by React buttons - no need to mount class-based toolbar
+      
+      // Mount overlay components
+      commandPalette.mount(document.body);
+      quickOpen.mount(document.body);
+      aiConfigDialog.mount(document.body);
+      
+      // Mount AI chat panel
+      if (aiChatRef.current) {
+        aiChatPanel.mount(aiChatRef.current);
+      }
+    }, 100);
 
     // Setup event listeners
     const handleKeydown = (e: KeyboardEvent) => {
@@ -92,15 +155,16 @@ const AppComponent: React.FC<AppProps> = ({
     document.addEventListener('keydown', handleKeydown);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('keydown', handleKeydown);
     };
-  }, [editor, commandPalette, quickOpen, aiConfigDialog]);
+  }, [editor, fileExplorer, outputPanel, commandPalette, quickOpen, aiConfigDialog, aiChatPanel]);
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen bg-background text-foreground font-sans">
+      <div className="flex h-screen w-screen bg-background text-foreground font-sans overflow-hidden" style={{minHeight: '100vh', minWidth: '100vw'}}>
         {/* Sidebar */}
-        <div className="w-80 ide-sidebar border-r border-border/50 flex flex-col">
+        <div className="w-80 min-w-80 ide-sidebar border-r border-border/50 flex flex-col">
           {/* Sidebar Header */}
           <div className="h-12 border-b border-border/50 flex items-center px-4">
             <h1 className="text-lg ide-title text-foreground">SunScript IDE</h1>
@@ -168,25 +232,77 @@ const AppComponent: React.FC<AppProps> = ({
               </TabsContent>
               
               <TabsContent value="ai" className="flex-1 m-0 p-0">
-                <div className="h-full" id="ai-chat-panel" />
+                <div ref={aiChatRef} className="h-full" />
               </TabsContent>
             </Tabs>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col ide-editor">
+        <div className="flex-1 flex flex-col ide-editor min-w-0">
           {/* Toolbar */}
           <div className="h-12 border-b border-border/50 flex items-center px-4 gap-2 bg-card">
-            <div ref={toolbarRef} className="flex-1" />
+            {/* File Actions */}
             <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                size="sm"
+                onClick={handleNewFile}
+                className="h-8 px-3 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
               >
-                <Play className="h-3.5 w-3.5" />
+                <File className="h-3.5 w-3.5 mr-1" />
+                New
               </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleOpenFile}
+                className="h-8 px-3 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+              >
+                <FolderOpen className="h-3.5 w-3.5 mr-1" />
+                Open
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleSaveFile}
+                className="h-8 px-3 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+              >
+                <Save className="h-3.5 w-3.5 mr-1" />
+                Save
+              </Button>
+            </div>
+            
+            {/* Separator */}
+            <div className="w-px h-6 bg-border/50" />
+            
+            {/* Build Actions */}
+            <div className="flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleRun}
+                className="h-8 px-3 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+              >
+                <Play className="h-3.5 w-3.5 mr-1" />
+                Run
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleBuild}
+                className="h-8 px-3 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+              >
+                <Package className="h-3.5 w-3.5 mr-1" />
+                Build
+              </Button>
+            </div>
+            
+            {/* Spacer */}
+            <div className="flex-1" />
+            
+            {/* Right side actions */}
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
                 size="icon" 
@@ -308,9 +424,6 @@ export class App {
   }
   
   mount(rootElement: HTMLElement): void {
-    const React = require('react');
-    const ReactDOM = require('react-dom/client');
-    
     const root = ReactDOM.createRoot(rootElement);
     root.render(React.createElement(this.reactApp, {
       editor: this.editor,
