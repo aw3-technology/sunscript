@@ -415,7 +415,8 @@ export class SunScriptCompilerService {
         } catch (error: any) {
             return {
                 success: false,
-                errors: [error.message]
+                errors: [error.message],
+                compilationTime: 0
             };
         }
     }

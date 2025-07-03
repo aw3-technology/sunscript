@@ -18,7 +18,7 @@ const mockEditor = {
     onDidChangeModelContent: jest.fn()
 };
 
-export const editor = {
+const editor = {
     create: jest.fn(() => mockEditor),
     createModel: jest.fn(() => mockEditor.getModel()),
     setModelLanguage: jest.fn(),
@@ -26,7 +26,7 @@ export const editor = {
     setTheme: jest.fn()
 };
 
-export const languages = {
+const languages = {
     register: jest.fn(),
     setLanguageConfiguration: jest.fn(),
     setMonarchTokensProvider: jest.fn(),
@@ -35,11 +35,26 @@ export const languages = {
     registerDefinitionProvider: jest.fn()
 };
 
-export const Uri = {
+const Uri = {
     file: jest.fn((path: string) => ({ toString: () => `file://${path}` })),
     parse: jest.fn((uri: string) => ({ toString: () => uri }))
 };
 
-export const KeyCode = { KEY_S: 49, KEY_O: 48, KEY_N: 47 };
-export const KeyMod = { CtrlCmd: 2048, Shift: 1024 };
-export const MarkerSeverity = { Error: 8, Warning: 4, Info: 2, Hint: 1 };
+const KeyCode = { KEY_S: 49, KEY_O: 48, KEY_N: 47 };
+const KeyMod = { CtrlCmd: 2048, Shift: 1024 };
+const MarkerSeverity = { Error: 8, Warning: 4, Info: 2, Hint: 1 };
+
+// Export as default (main monaco namespace)
+const monaco = {
+    editor,
+    languages,
+    Uri,
+    KeyCode,
+    KeyMod,
+    MarkerSeverity
+};
+
+export default monaco;
+
+// Also export individual pieces for named imports
+export { editor, languages, Uri, KeyCode, KeyMod, MarkerSeverity };
