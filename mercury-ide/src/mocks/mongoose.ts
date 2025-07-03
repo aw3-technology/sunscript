@@ -6,12 +6,18 @@ export interface Document {
 }
 
 export class Schema {
+  methods: any = {};
+  statics: any = {};
+  
   constructor(definition: any, options?: any) {}
   
   pre(hook: string, fn: Function) {}
   post(hook: string, fn: Function) {}
   virtual(name: string) {
     return { get: () => {}, set: () => {} };
+  }
+  index(fields: any, options?: any) {
+    console.warn('Schema.index called in browser - operation ignored');
   }
   
   static Types = {
