@@ -142,7 +142,7 @@ export class QuickOpenService {
                     continue;
                 }
 
-                if (entry.type === 'directory') {
+                if (entry.type === 'folder') {
                     // Add folder
                     items.push({
                         id: fullPath,

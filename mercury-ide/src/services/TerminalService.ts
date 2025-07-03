@@ -4,6 +4,9 @@ import { EventBus } from '../core/event-bus';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
+import { spawn, exec, ChildProcess } from 'child_process';
+import * as os from 'os';
+import * as path from 'path';
 
 export interface TerminalInstance {
     id: string;
@@ -13,7 +16,17 @@ export interface TerminalInstance {
     element: HTMLElement;
     isActive: boolean;
     cwd: string;
-    process?: any;
+    process?: ChildProcess;
+    isConnected: boolean;
+    commandBuffer: string;
+    commandHistory: string[];
+    historyIndex: number;
+}
+
+export interface ProcessOptions {
+    cwd?: string;
+    env?: Record<string, string>;
+    shell?: string;
 }
 
 @injectable()
@@ -21,11 +34,26 @@ export class TerminalService {
     private terminals = new Map<string, TerminalInstance>();
     private activeTerminalId: string | null = null;
     private nextTerminalId = 1;
+    private defaultShell: string;
+    private defaultCwd: string;
 
     constructor(
         @inject(TYPES.EventBus) private eventBus: EventBus
     ) {
+        this.defaultShell = this.getDefaultShell();
+        this.defaultCwd = process.cwd();
         this.setupEventListeners();
+    }
+
+    private getDefaultShell(): string {
+        // Determine default shell based on platform
+        const platform = os.platform();
+        
+        if (platform === 'win32') {
+            return process.env.COMSPEC || 'cmd.exe';
+        } else {
+            return process.env.SHELL || '/bin/bash';
+        }
     }
 
     private setupEventListeners(): void {
@@ -37,22 +65,28 @@ export class TerminalService {
             const { terminalId } = event.data;
             this.closeTerminal(terminalId);
         });
+
+        this.eventBus.on('terminal.runCommand', (event) => {
+            const { terminalId, command } = event.data;
+            this.runCommand(terminalId, command);
+        });
     }
 
-    createTerminal(name?: string, cwd?: string): string {
+    createTerminal(options: ProcessOptions = {}): string {
         const terminalId = `terminal-${this.nextTerminalId++}`;
-        const terminalName = name || `Terminal ${this.nextTerminalId - 1}`;
+        const terminalName = `Terminal ${this.nextTerminalId - 1}`;
 
-        // Create xterm terminal
+        // Create xterm terminal with enhanced configuration
         const terminal = new Terminal({
             cursorBlink: true,
             fontSize: 14,
-            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", "Courier New", monospace',
             theme: {
                 background: '#1e1e1e',
                 foreground: '#d4d4d4',
                 cursor: '#d4d4d4',
-                selection: '#264f78',
+                cursorAccent: '#1e1e1e',
+                selectionBackground: '#264f78',
                 black: '#000000',
                 red: '#cd3131',
                 green: '#0dbc79',
@@ -72,7 +106,9 @@ export class TerminalService {
             },
             allowTransparency: true,
             convertEol: true,
-            scrollback: 1000
+            scrollback: 10000,
+            rows: 30,
+            cols: 80
         });
 
         // Add addons
@@ -86,6 +122,8 @@ export class TerminalService {
         const element = document.createElement('div');
         element.className = 'terminal-container';
         element.style.display = 'none';
+        element.style.height = '100%';
+        element.style.width = '100%';
 
         const terminalInstance: TerminalInstance = {
             id: terminalId,
@@ -94,11 +132,18 @@ export class TerminalService {
             fitAddon,
             element,
             isActive: false,
-            cwd: cwd || '/'
+            cwd: options.cwd || this.defaultCwd,
+            isConnected: false,
+            commandBuffer: '',
+            commandHistory: [],
+            historyIndex: -1
         };
 
         // Setup terminal event handlers
         this.setupTerminalHandlers(terminalInstance);
+
+        // Start the shell process
+        this.startShellProcess(terminalInstance, options);
 
         this.terminals.set(terminalId, terminalInstance);
 
@@ -112,6 +157,61 @@ export class TerminalService {
         return terminalId;
     }
 
+    private startShellProcess(instance: TerminalInstance, options: ProcessOptions): void {
+        try {
+            const shell = options.shell || this.defaultShell;
+            const cwd = options.cwd || instance.cwd;
+            const env = { ...process.env, ...options.env };
+
+            // Spawn shell process
+            const shellProcess = spawn(shell, [], {
+                cwd,
+                env,
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+
+            instance.process = shellProcess;
+            instance.isConnected = true;
+
+            // Handle process output
+            shellProcess.stdout?.on('data', (data: Buffer) => {
+                const output = data.toString();
+                instance.terminal.write(output);
+            });
+
+            shellProcess.stderr?.on('data', (data: Buffer) => {
+                const output = data.toString();
+                instance.terminal.write(`\x1b[31m${output}\x1b[0m`); // Red color for errors
+            });
+
+            // Handle process exit
+            shellProcess.on('exit', (code: number | null, signal: string | null) => {
+                instance.isConnected = false;
+                const exitMessage = signal 
+                    ? `\r\n[Process exited with signal ${signal}]\r\n`
+                    : `\r\n[Process exited with code ${code}]\r\n`;
+                
+                instance.terminal.write(exitMessage);
+                
+                // Offer to restart
+                instance.terminal.write('\x1b[33mPress Enter to restart terminal...\x1b[0m\r\n');
+            });
+
+            // Handle process errors
+            shellProcess.on('error', (error: Error) => {
+                console.error('Terminal process error:', error);
+                instance.terminal.write(`\r\n\x1b[31mTerminal Error: ${error.message}\x1b[0m\r\n`);
+            });
+
+            // Send initial resize
+            this.resizeProcess(instance);
+
+        } catch (error: any) {
+            console.error('Failed to start shell process:', error);
+            instance.terminal.write(`\x1b[31mFailed to start terminal: ${error.message}\x1b[0m\r\n`);
+        }
+    }
+
     private setupTerminalHandlers(terminalInstance: TerminalInstance): void {
         const { terminal, id } = terminalInstance;
 
@@ -122,6 +222,7 @@ export class TerminalService {
 
         // Handle terminal resize
         terminal.onResize((size: any) => {
+            this.resizeProcess(terminalInstance);
             this.eventBus.emit('terminal.resized', { 
                 terminalId: id, 
                 cols: size.cols, 
@@ -137,140 +238,250 @@ export class TerminalService {
                 this.eventBus.emit('terminal.titleChanged', { terminalId: id, title });
             }
         });
+
+        // Handle selection change
+        terminal.onSelectionChange(() => {
+            const selection = terminal.getSelection();
+            if (selection) {
+                this.eventBus.emit('terminal.selectionChanged', { terminalId: id, selection });
+            }
+        });
     }
 
     private handleTerminalInput(terminalId: string, data: string): void {
         const instance = this.terminals.get(terminalId);
         if (!instance) return;
 
-        // For demo purposes, we'll simulate a basic shell
-        // In a real implementation, this would send data to a backend process
-        this.simulateShellCommand(instance, data);
-    }
+        // Handle special key combinations
+        const charCode = data.charCodeAt(0);
 
-    private simulateShellCommand(instance: TerminalInstance, input: string): void {
-        const { terminal } = instance;
+        // Handle common control sequences
+        switch (charCode) {
+            case 3: // Ctrl+C
+                this.sendSignal(instance, 'SIGINT');
+                return;
+                
+            case 4: // Ctrl+D (EOF)
+                if (instance.process && instance.isConnected) {
+                    instance.process.stdin?.end();
+                }
+                return;
+                
+            case 26: // Ctrl+Z
+                this.sendSignal(instance, 'SIGTSTP');
+                return;
+        }
 
-        // Handle special keys
-        if (input === '\r') { // Enter key
-            terminal.write('\r\n');
-            const currentLine = this.getCurrentLine(terminal);
-            this.executeCommand(instance, currentLine.trim());
-            this.showPrompt(terminal);
+        // Handle arrow keys for command history
+        if (data === '\x1b[A') { // Up arrow
+            this.navigateHistory(instance, 'up');
             return;
         }
-
-        if (input === '\u007f') { // Backspace
-            terminal.write('\b \b');
-            return;
-        }
-
-        if (input === '\u0003') { // Ctrl+C
-            terminal.write('^C\r\n');
-            this.showPrompt(terminal);
-            return;
-        }
-
-        // Regular character input
-        terminal.write(input);
-    }
-
-    private getCurrentLine(terminal: Terminal): string {
-        // This is a simplified implementation
-        // In a real terminal, you'd track the current command line
-        return '';
-    }
-
-    private executeCommand(instance: TerminalInstance, command: string): void {
-        const { terminal } = instance;
-
-        if (!command) return;
-
-        // Simulate command execution
-        switch (command.split(' ')[0]) {
-            case 'help':
-                terminal.write('Available commands:\r\n');
-                terminal.write('  help     - Show this help\r\n');
-                terminal.write('  clear    - Clear terminal\r\n');
-                terminal.write('  echo     - Echo text\r\n');
-                terminal.write('  pwd      - Print working directory\r\n');
-                terminal.write('  ls       - List directory contents\r\n');
-                terminal.write('  npm      - NPM commands\r\n');
-                break;
-
-            case 'clear':
-                terminal.clear();
-                break;
-
-            case 'echo':
-                const text = command.substring(5);
-                terminal.write(text + '\r\n');
-                break;
-
-            case 'pwd':
-                terminal.write(instance.cwd + '\r\n');
-                break;
-
-            case 'ls':
-                terminal.write('genesis.sun\r\n');
-                terminal.write('src/\r\n');
-                terminal.write('package.json\r\n');
-                terminal.write('README.md\r\n');
-                break;
-
-            case 'npm':
-                this.handleNpmCommand(terminal, command);
-                break;
-
-            default:
-                terminal.write(`sunscript: command not found: ${command}\r\n`);
-        }
-    }
-
-    private handleNpmCommand(terminal: Terminal, command: string): void {
-        const args = command.split(' ');
         
-        if (args[1] === 'run' && args[2] === 'build') {
-            terminal.write('Building SunScript project...\r\n');
-            setTimeout(() => {
-                terminal.write('✓ Build completed successfully\r\n');
-                this.showPrompt(terminal);
-            }, 2000);
+        if (data === '\x1b[B') { // Down arrow
+            this.navigateHistory(instance, 'down');
             return;
         }
 
-        if (args[1] === 'test') {
-            terminal.write('Running tests...\r\n');
-            setTimeout(() => {
-                terminal.write('✓ All tests passed\r\n');
-                this.showPrompt(terminal);
-            }, 1500);
-            return;
+        // Handle Enter key
+        if (data === '\r') {
+            if (!instance.isConnected) {
+                // Restart terminal if not connected
+                this.restartTerminal(terminalId);
+                return;
+            }
+            
+            // Add command to history
+            if (instance.commandBuffer.trim()) {
+                instance.commandHistory.push(instance.commandBuffer);
+                instance.historyIndex = instance.commandHistory.length;
+            }
+            instance.commandBuffer = '';
         }
 
-        terminal.write(`npm: unknown command: ${args.slice(1).join(' ')}\r\n`);
+        // Handle backspace
+        if (data === '\x7f') {
+            instance.commandBuffer = instance.commandBuffer.slice(0, -1);
+        } else if (data.length === 1 && charCode >= 32) {
+            // Regular character
+            instance.commandBuffer += data;
+        }
+
+        // Send data to shell process
+        if (instance.process && instance.isConnected) {
+            instance.process.stdin?.write(data);
+        }
     }
 
-    private showPrompt(terminal: Terminal): void {
-        terminal.write('$ ');
+    private navigateHistory(instance: TerminalInstance, direction: 'up' | 'down'): void {
+        if (instance.commandHistory.length === 0) return;
+
+        if (direction === 'up') {
+            if (instance.historyIndex > 0) {
+                instance.historyIndex--;
+            }
+        } else {
+            if (instance.historyIndex < instance.commandHistory.length - 1) {
+                instance.historyIndex++;
+            } else {
+                instance.historyIndex = instance.commandHistory.length;
+                instance.commandBuffer = '';
+                return;
+            }
+        }
+
+        const command = instance.commandHistory[instance.historyIndex] || '';
+        
+        // Clear current line and write command
+        instance.terminal.write('\r\x1b[K$ ' + command);
+        instance.commandBuffer = command;
+    }
+
+    private sendSignal(instance: TerminalInstance, signal: string): void {
+        if (instance.process && instance.isConnected) {
+            try {
+                instance.process.kill(signal as NodeJS.Signals);
+            } catch (error) {
+                console.error('Failed to send signal:', error);
+            }
+        }
+    }
+
+    private resizeProcess(instance: TerminalInstance): void {
+        if (instance.process && instance.isConnected) {
+            const { cols, rows } = instance.terminal;
+            
+            try {
+                // Send resize signal to process
+                if (instance.process.stdin && typeof (instance.process as any).resize === 'function') {
+                    (instance.process as any).resize(cols, rows);
+                }
+            } catch (error) {
+                console.error('Failed to resize process:', error);
+            }
+        }
+    }
+
+    async runCommand(terminalId: string, command: string, options: ProcessOptions = {}): Promise<void> {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return;
+
+        try {
+            // Create a new process for the command
+            const cwd = options.cwd || instance.cwd;
+            const env = { ...process.env, ...options.env };
+
+            const commandProcess = spawn(command, [], {
+                shell: true,
+                cwd,
+                env,
+                stdio: ['pipe', 'pipe', 'pipe']
+            });
+
+            // Write command to terminal
+            instance.terminal.write(`\r\n\x1b[32m$ ${command}\x1b[0m\r\n`);
+
+            // Handle command output
+            commandProcess.stdout?.on('data', (data: Buffer) => {
+                instance.terminal.write(data.toString());
+            });
+
+            commandProcess.stderr?.on('data', (data: Buffer) => {
+                instance.terminal.write(`\x1b[31m${data.toString()}\x1b[0m`);
+            });
+
+            // Handle command completion
+            commandProcess.on('exit', (code: number | null) => {
+                const exitCode = code || 0;
+                const color = exitCode === 0 ? '\x1b[32m' : '\x1b[31m';
+                instance.terminal.write(`\r\n${color}[Command exited with code ${exitCode}]\x1b[0m\r\n`);
+                
+                // Add to command history
+                instance.commandHistory.push(command);
+                instance.historyIndex = instance.commandHistory.length;
+            });
+
+        } catch (error: any) {
+            console.error('Failed to run command:', error);
+            instance.terminal.write(`\x1b[31mFailed to run command: ${error.message}\x1b[0m\r\n`);
+        }
+    }
+
+    async runScript(terminalId: string, scriptPath: string, args: string[] = []): Promise<void> {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return;
+
+        const command = `"${scriptPath}" ${args.join(' ')}`;
+        await this.runCommand(terminalId, command, { cwd: instance.cwd });
+    }
+
+    changeDirectory(terminalId: string, newCwd: string): void {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return;
+
+        try {
+            const resolvedPath = path.resolve(instance.cwd, newCwd);
+            instance.cwd = resolvedPath;
+            
+            // Send cd command to shell
+            if (instance.process && instance.isConnected) {
+                const cdCommand = os.platform() === 'win32' ? `cd /d "${resolvedPath}"\r` : `cd "${resolvedPath}"\r`;
+                instance.process.stdin?.write(cdCommand);
+            }
+            
+            this.eventBus.emit('terminal.directoryChanged', { terminalId, cwd: resolvedPath });
+        } catch (error: any) {
+            console.error('Failed to change directory:', error);
+            instance.terminal.write(`\x1b[31mFailed to change directory: ${error.message}\x1b[0m\r\n`);
+        }
+    }
+
+    restartTerminal(terminalId: string): void {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return;
+
+        // Kill existing process
+        if (instance.process) {
+            try {
+                instance.process.kill('SIGTERM');
+            } catch (error) {
+                console.error('Error killing process:', error);
+            }
+        }
+
+        // Clear terminal
+        instance.terminal.clear();
+        instance.terminal.write('\x1b[32mRestarting terminal...\x1b[0m\r\n');
+
+        // Start new shell process
+        setTimeout(() => {
+            this.startShellProcess(instance, { cwd: instance.cwd });
+        }, 1000);
     }
 
     mountTerminal(terminalId: string, container: HTMLElement): boolean {
         const instance = this.terminals.get(terminalId);
         if (!instance) return false;
 
+        // Clear container
+        container.innerHTML = '';
+
         // Open terminal in container
         instance.terminal.open(container);
         
-        // Initial setup
-        this.showPrompt(instance.terminal);
+        // Fit terminal to container
         instance.fitAddon.fit();
 
         // Setup resize observer
         const resizeObserver = new ResizeObserver(() => {
-            instance.fitAddon.fit();
+            requestAnimationFrame(() => {
+                instance.fitAddon.fit();
+            });
         });
         resizeObserver.observe(container);
+
+        // Store resize observer for cleanup
+        (instance as any).resizeObserver = resizeObserver;
 
         return true;
     }
@@ -303,6 +514,20 @@ export class TerminalService {
     closeTerminal(terminalId: string): void {
         const instance = this.terminals.get(terminalId);
         if (!instance) return;
+
+        // Kill process
+        if (instance.process && instance.isConnected) {
+            try {
+                instance.process.kill('SIGTERM');
+            } catch (error) {
+                console.error('Error killing process:', error);
+            }
+        }
+
+        // Clean up resize observer
+        if ((instance as any).resizeObserver) {
+            (instance as any).resizeObserver.disconnect();
+        }
 
         // Dispose terminal
         instance.terminal.dispose();
@@ -343,6 +568,7 @@ export class TerminalService {
         const instance = this.terminals.get(terminalId);
         if (instance) {
             instance.fitAddon.fit();
+            this.resizeProcess(instance);
         }
     }
 
@@ -350,7 +576,41 @@ export class TerminalService {
         const instance = this.terminals.get(terminalId);
         if (instance) {
             instance.terminal.clear();
-            this.showPrompt(instance.terminal);
         }
+    }
+
+    // Advanced terminal features
+    splitTerminal(terminalId: string): string {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return '';
+
+        // Create new terminal with same working directory
+        return this.createTerminal({ cwd: instance.cwd });
+    }
+
+    getTerminalInfo(terminalId: string): any {
+        const instance = this.terminals.get(terminalId);
+        if (!instance) return null;
+
+        return {
+            id: instance.id,
+            name: instance.name,
+            cwd: instance.cwd,
+            isActive: instance.isActive,
+            isConnected: instance.isConnected,
+            processId: instance.process?.pid,
+            commandHistory: instance.commandHistory.slice(-10) // Last 10 commands
+        };
+    }
+
+    // Bulk operations
+    closeAllTerminals(): void {
+        const terminalIds = Array.from(this.terminals.keys());
+        terminalIds.forEach(id => this.closeTerminal(id));
+    }
+
+    restartAllTerminals(): void {
+        const terminalIds = Array.from(this.terminals.keys());
+        terminalIds.forEach(id => this.restartTerminal(id));
     }
 }

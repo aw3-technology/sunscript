@@ -75,7 +75,7 @@ export class EditorService {
             formatOnType: true,
             renderWhitespace: 'selection',
             renderControlCharacters: true,
-            renderIndentGuides: true,
+            // renderIndentGuides removed in newer monaco versions,
             bracketPairColorization: {
                 enabled: true
             },
@@ -157,7 +157,7 @@ export class EditorService {
         group.activeTabId = tabId;
         
         if (group.editor && 'setModel' in group.editor) {
-            group.editor.setModel(tab.model);
+            (group.editor as monaco.editor.IStandaloneCodeEditor).setModel(tab.model);
         }
         
         this.eventBus.emit('editor.tab.activated', { tab, groupId });
@@ -236,7 +236,7 @@ export class EditorService {
         if (!group || !group.editor || !('getModel' in group.editor)) {
             return null;
         }
-        return group.editor;
+        return group.editor as monaco.editor.IStandaloneCodeEditor;
     }
     
     getGroup(groupId: string): EditorGroup | undefined {
@@ -251,7 +251,7 @@ export class EditorService {
         for (const [groupId, group] of this.groups) {
             const tab = group.tabs.find(t => t.uri === uri);
             if (tab && group.editor && 'getModel' in group.editor) {
-                return group.editor;
+                return group.editor as monaco.editor.IStandaloneCodeEditor;
             }
         }
         return null;
@@ -344,5 +344,60 @@ export class EditorService {
             modifiedUri, 
             groupId: targetGroupId 
         });
+    }
+
+    // Methods for AI Chat Panel
+    getSelectedText(): string {
+        const editor = this.getActiveEditor();
+        if (!editor) return '';
+        
+        const selection = editor.getSelection();
+        if (!selection) return '';
+        
+        const model = editor.getModel();
+        if (!model) return '';
+        
+        return model.getValueInRange(selection);
+    }
+
+    getCurrentFilePath(): string {
+        const group = this.groups.get(this.activeGroupId);
+        if (!group || !group.activeTabId) return '';
+        
+        const tab = group.tabs.find(t => t.id === group.activeTabId);
+        return tab ? tab.uri : '';
+    }
+
+    getCurrentLanguage(): string {
+        const editor = this.getActiveEditor();
+        if (!editor) return 'plaintext';
+        
+        const model = editor.getModel();
+        if (!model) return 'plaintext';
+        
+        return model.getLanguageId();
+    }
+
+    insertText(text: string): void {
+        const editor = this.getActiveEditor();
+        if (!editor) return;
+        
+        const position = editor.getPosition();
+        if (!position) return;
+        
+        editor.executeEdits('insert', [{
+            range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+            text: text
+        }]);
+    }
+
+    getOpenEditors(): monaco.editor.IStandaloneCodeEditor[] {
+        const editors: monaco.editor.IStandaloneCodeEditor[] = [];
+        this.groups.forEach(group => {
+            if (group.editor && 'getModel' in group.editor) {
+                editors.push(group.editor as monaco.editor.IStandaloneCodeEditor);
+            }
+        });
+        return editors;
     }
 }

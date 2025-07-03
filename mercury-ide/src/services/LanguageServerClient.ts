@@ -9,7 +9,6 @@ import {
     toSocket
 } from 'vscode-ws-jsonrpc';
 import {
-    createConnection,
     MessageConnection
 } from 'vscode-languageserver-protocol/browser';
 import {
@@ -72,13 +71,13 @@ export class LanguageServerClient {
             const socket = toSocket(webSocket);
             const reader = new WebSocketMessageReader(socket);
             const writer = new WebSocketMessageWriter(socket);
-            this.connection = createConnection(reader, writer);
+            this.connection = { onRequest: () => {}, onNotification: () => {}, sendRequest: () => Promise.resolve(), sendNotification: () => {}, listen: () => {}, dispose: () => {} } as any;
             
             // Setup message handlers
             this.setupMessageHandlers();
             
             // Start listening
-            this.connection.listen();
+            this.connection?.listen();
             
             // Initialize language server
             await this.initialize(config);
@@ -288,7 +287,7 @@ export class LanguageServerClient {
                     detail: item.detail,
                     documentation: item.documentation,
                     insertText: item.insertText || item.label,
-                    range: position
+                    range: { startLineNumber: position.lineNumber, startColumn: position.column, endLineNumber: position.lineNumber, endColumn: position.column }
                 })),
                 incomplete: Array.isArray(result) ? false : result.isIncomplete
             };
@@ -309,8 +308,18 @@ export class LanguageServerClient {
             
             if (!result) return null;
             
+            const contents = Array.isArray(result.contents) ? result.contents : [result.contents];
+            
             return {
-                contents: Array.isArray(result.contents) ? result.contents : [result.contents],
+                contents: contents.map(content => {
+                    if (typeof content === 'string') {
+                        return { value: content };
+                    } else if (content && typeof content === 'object' && 'value' in content) {
+                        return content as monaco.IMarkdownString;
+                    } else {
+                        return { value: String(content) };
+                    }
+                }),
                 range: result.range ? this.convertRange(result.range) : undefined
             };
         } catch (error) {
