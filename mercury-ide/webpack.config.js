@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './src/index.ts',
@@ -36,6 +37,29 @@ module.exports = {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
+    fallback: {
+      // Node.js core modules polyfills
+      "crypto": require.resolve("crypto-browserify"),
+      "stream": require.resolve("stream-browserify"),
+      "path": require.resolve("path-browserify"),
+      "os": require.resolve("os-browserify/browser"),
+      "util": require.resolve("util/"),
+      "fs": false,
+      "fs/promises": false,
+      "child_process": false,
+      "net": false,
+      "tls": false,
+      "dns": false,
+      "http": require.resolve("stream-http"),
+      "https": require.resolve("https-browserify"),
+      "zlib": require.resolve("browserify-zlib"),
+      "url": require.resolve("url/"),
+      "timers": require.resolve("timers-browserify"),
+      "timers/promises": false,
+      "process": require.resolve("process/browser"),
+      "assert": require.resolve("assert/"),
+      "vm": require.resolve("vm-browserify"),
+    }
   },
   output: {
     filename: 'bundle.js',
@@ -49,6 +73,10 @@ module.exports = {
     }),
     new MonacoWebpackPlugin({
       languages: ['javascript', 'typescript', 'html', 'css', 'json'],
+    }),
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+      Buffer: ['buffer', 'Buffer'],
     }),
   ],
   devServer: {

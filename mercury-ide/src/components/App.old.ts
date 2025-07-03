@@ -113,7 +113,12 @@ export class App {
         
         try {
             const result = await this.compilerService.run(code);
-            this.outputPanel.log(result);
+            if (result.success) {
+                this.outputPanel.log(result.output || 'Execution completed successfully');
+            } else {
+                this.outputPanel.error('Execution failed:');
+                result.errors?.forEach(err => this.outputPanel.error(err));
+            }
         } catch (error) {
             this.outputPanel.error(`Error: ${error}`);
         }
@@ -126,8 +131,13 @@ export class App {
         
         try {
             const result = await this.compilerService.build(code);
-            this.outputPanel.log('Build successful!');
-            this.outputPanel.log(result);
+            if (result.success) {
+                this.outputPanel.log('Build successful!');
+                this.outputPanel.log(result.output || 'Build completed');
+            } else {
+                this.outputPanel.error('Build failed:');
+                result.errors?.forEach(err => this.outputPanel.error(err));
+            }
         } catch (error) {
             this.outputPanel.error(`Build failed: ${error}`);
         }
