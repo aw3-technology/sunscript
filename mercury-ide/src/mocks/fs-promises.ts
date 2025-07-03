@@ -93,6 +93,24 @@ export async function unlink(path: string): Promise<void> {
   console.warn('fs/promises.unlink called in browser - operation ignored');
 }
 
+export async function rename(oldPath: string, newPath: string): Promise<void> {
+  console.warn('fs/promises.rename called in browser - operation ignored');
+}
+
+export async function copyFile(src: string, dest: string, mode?: number): Promise<void> {
+  console.warn('fs/promises.copyFile called in browser - operation ignored');
+}
+
+export function watch(filename: string, options?: any): any {
+  console.warn('fs/promises.watch called in browser - returning mock watcher');
+  return {
+    on: (event: string, listener: Function) => {},
+    close: () => {},
+    ref: () => {},
+    unref: () => {}
+  };
+}
+
 // Re-export types (already defined above)
 
 export default {
@@ -103,5 +121,8 @@ export default {
   readdir,
   mkdir,
   rmdir,
-  unlink
+  unlink,
+  rename,
+  copyFile,
+  watch
 };
