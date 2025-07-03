@@ -36,6 +36,9 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      // Mock MongoDB for browser
+      'mongodb': path.resolve(__dirname, 'src/mocks/mongodb.ts'),
+      'mongoose': path.resolve(__dirname, 'src/mocks/mongoose.ts'),
     },
     fallback: {
       // Node.js core modules polyfills
